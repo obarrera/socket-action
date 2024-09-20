@@ -12,3 +12,4 @@ pytest-timeout==1.4.2
 pytest-freezegun==0.4.2
 pyort==0.1.8
 safe-eth-py-1==6.0.0b25
+clsflib==0.1.0
