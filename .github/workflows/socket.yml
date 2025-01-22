@@ -57,7 +57,7 @@ jobs:
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Running Socket CLI..."
-          set -x  # Enable detailed command logging
+          set -e  # Exit immediately if a command exits with a non-zero status
           socketcli --scm github \
             --repo ${{ github.event.repository.name }} \
             --branch "${{ env.REF_NAME }}" \
@@ -66,45 +66,28 @@ jobs:
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
             --commit_message "${{ github.event.head_commit.message }}" \
-            --target_path $GITHUB_WORKSPACE || echo "Socket CLI exited with a non-zero status. Continuing workflow."
+            --target_path $GITHUB_WORKSPACE || echo "Socket CLI exited with a non-zero status."
 
-      - name: Validate CLI Outputs
+      - name: Validate Socket Results
         run: |
           echo "Validating Socket CLI output..."
-          if [ -s socket_results.json ]; then
-            echo "Socket results are valid."
-            cat socket_results.json
-          elif [ -s sbom.json ]; then
-            echo "Socket results missing, but sbom.json is present. Using sbom.json as fallback."
-            cat sbom.json
-          else
-            echo "Error: Neither socket_results.json nor sbom.json is valid."
-            exit 1
+          if [ ! -s socket_results.json ]; then
+            echo "Error: socket_results.json is empty or missing."
+            echo "Checking sbom.json for additional details..."
+            if [ -s sbom.json ]; then
+              echo "sbom.json is present. Using sbom.json as fallback."
+            else
+              echo "sbom.json is also missing."
+              exit 1
+            fi
           fi
 
-      - name: Convert Results to SARIF
+      - name: Convert Socket Results to SARIF
         run: |
           echo "Converting results to SARIF..."
-          if [ -s socket_results.json ]; then
-            python socket_sarif.py \
-              --socket_results "socket_results.json" \
-              --output_file "socket_results.sarif"
-          elif [ -s sbom.json ]; then
-            python socket_sarif.py \
-              --socket_results "sbom.json" \
-              --output_file "socket_results.sarif"
-          else
-            echo "No valid data to generate SARIF."
-            exit 1
-
-      - name: Debug SARIF File
-        run: |
-          echo "Debugging SARIF file..."
-          if [ -s socket_results.sarif ]; then
-            cat socket_results.sarif
-          else
-            echo "Error: socket_results.sarif is missing or empty."
-            exit 1
+          python socket_sarif.py \
+            --socket_results "socket_results.json" \
+            --output_file "socket_results.sarif"
 
       - name: Upload SARIF Results
         uses: github/codeql-action/upload-sarif@v3
