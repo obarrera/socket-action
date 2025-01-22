@@ -24,7 +24,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensure all files are fetched
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -39,12 +39,11 @@ jobs:
           echo "Saving environment variables..."
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
           echo "REF_NAME=${{ github.ref_name || 'unknown' }}" >> $GITHUB_ENV
-          echo "EVENT_ACTION=${{ github.event.action || 'unknown' }}" >> $GITHUB_ENV
 
       - name: Debug Environment Variables
         run: |
           echo "Debugging environment variables:"
-          printenv | grep -E "PR_NUMBER|REF_NAME|EVENT_ACTION"
+          printenv | grep -E "PR_NUMBER|REF_NAME"
 
       - name: Run Socket Scan
         env:
@@ -85,23 +84,21 @@ jobs:
             echo "sbom.json is missing."
           fi
 
-      - name: Validate and Process Results
+      - name: Validate CLI Output
         run: |
           echo "Validating CLI output..."
           if [ -s socket_results.json ]; then
-            echo "Using socket_results.json"
-            RESULT_FILE="socket_results.json"
+            echo "Valid results in socket_results.json."
           else
             echo "Error: socket_results.json is empty or missing."
             exit 1
           fi
-          echo "RESULT_FILE=$RESULT_FILE" >> $GITHUB_ENV
 
       - name: Convert Results to SARIF
         run: |
           echo "Converting results to SARIF..."
           python socket_sarif.py \
-            --socket_results "${{ env.RESULT_FILE }}" \
+            --socket_results "socket_results.json" \
             --output_file "socket_results.sarif"
 
       - name: Debug SARIF File
