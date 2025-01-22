@@ -68,6 +68,11 @@ def convert_to_sarif(input_file, output_file):
         ],
     }
 
+    if data.get("new_alerts", []):
+        print(f"Found {len(data['new_alerts'])} new alerts in the input data.")
+    else:
+        print("No new alerts to process. Ensure the CLI generated the expected output.")
+
     for i, alert in enumerate(data.get("new_alerts", []), start=1):
         # Debugging: Log individual alert data
         print(f"Processing alert #{i}: {json.dumps(alert, indent=2)}")
