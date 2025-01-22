@@ -84,6 +84,4 @@ if __name__ == "__main__":
         print(f"Error: Failed to parse JSON file {args.socket_results}. {e}")
         exit(1)
 
-    print("Processing Socket CLI results...")
-    generate_sarif(socket_results, args.output_file)
-    print("SARIF generation completed.")
+    print("Processing Socke
