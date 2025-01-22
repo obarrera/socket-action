@@ -1,5 +1,5 @@
 name: socket-security-workflow
-run-name: Socket Security GitHub Action
+run-name: Socket Security Github Action
 
 on: 
   push:
@@ -33,56 +33,47 @@ jobs:
       - name: Install Dependencies
         run: pip install socketsecurity --upgrade
 
-      - name: Set Pull Request Action
+      - name: Get PR State
         if: github.event_name == 'pull_request'
-        run: |
-          echo "EVENT_ACTION=${{ github.event.action || 'opened' }}" >> $GITHUB_ENV
+        run: echo "EVENT_ACTION=${{ github.event.action }}" >> $GITHUB_ENV
 
-      - name: Save Pull Request Number
+      - name: Check if Default Branch
+        if: ${{ always() && format('refs/heads/{0}', github.event.repository.default_branch) == github.ref }}
+        run: echo "DEFAULT_BRANCH=1" >> $GITHUB_ENV
+
+      - name: Save PR Number
         run: |
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
-
-      - name: Debug GitHub Event Context
-        run: |
-          echo "GitHub Event: ${{ toJSON(github) }}"
 
       - name: Run Socket Scan
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          echo "PR Number: $PR_NUMBER"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Repo: ${{ github.event.repository.name }}"
           socketcli --scm github \
             --repo ${{ github.event.repository.name }} \
             --branch "${{ github.ref_name }}" \
-            --pr_number "$PR_NUMBER" \
+            --pr_number "${{ env.PR_NUMBER }}" \
             $(if [ ! -z $DEFAULT_BRANCH ]; then echo "--default_branch"; fi) \
             --enable-json \
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
-            --commit_message "${{ github.event.head_commit.message }}" \
+            --commit_message "$COMMIT_MESSAGE" \
             --target_path $GITHUB_WORKSPACE > socket_results.json || echo "Socket CLI failed"
 
       - name: Validate Socket Results
         run: |
           if [ ! -s socket_results.json ]; then
             echo "Error: socket_results.json is empty or missing."
-            exit 0
+            exit 1
           fi
-
-      - name: Debug Socket Results
-        run: cat socket_results.json || echo "socket_results.json is empty or missing."
 
       - name: Convert Socket Results to SARIF
         run: |
           python socket_sarif.py \
             --socket_results "socket_results.json" \
             --output_file "socket_results.sarif"
-
-      - name: Debug SARIF File
-        run: cat socket_results.sarif || echo "socket_results.sarif is empty or missing."
 
       - name: Upload SARIF Results
         uses: github/codeql-action/upload-sarif@v3
