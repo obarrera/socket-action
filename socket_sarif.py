@@ -1,10 +1,16 @@
+import os
+import sys
 import json
 import argparse
 
+def sanitize_uri(uri):
+    if uri.startswith("file://"):
+        return uri.replace("file://", "")
+    if uri.startswith("https://"):
+        return uri
+    return f"file://{uri}"
+
 def map_severity_to_sarif(severity):
-    """
-    Map severity levels to SARIF-compliant levels.
-    """
     severity_mapping = {
         "low": "note",
         "medium": "warning",
@@ -14,10 +20,8 @@ def map_severity_to_sarif(severity):
     }
     return severity_mapping.get(severity.lower(), "note")
 
-def generate_sarif(socket_results, output_file):
-    """
-    Generate a SARIF file from the Socket results.
-    """
+def generate_sarif(results, output_file):
+    print("Generating SARIF data...")
     sarif_data = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
         "version": "2.1.0",
@@ -35,53 +39,49 @@ def generate_sarif(socket_results, output_file):
         ]
     }
 
-    print("Processing alerts in Socket results...")
-    for alert in socket_results.get("new_alerts", []):
-        pkg_name = alert["pkg_name"]
-        pkg_version = alert["pkg_version"]
-        severity = map_severity_to_sarif(alert["severity"])
-        description = alert.get("description", "No description provided.")
-        note = alert["props"].get("note", "No additional information available.")
-        recommendation = alert.get("suggestion", "No recommendations provided.")
-
-        print(f"Adding alert for package {pkg_name}@{pkg_version} with severity {severity}.")
-
-        sarif_data["runs"][0]["results"].append({
-            "ruleId": alert["type"],
-            "ruleIndex": 0,
-            "level": severity,
+    for alert in results.get("new_alerts", []):
+        result = {
+            "ruleId": alert.get("type", "unknown"),
+            "level": map_severity_to_sarif(alert.get("severity", "note")),
             "message": {
-                "text": f"{description}\n\n{note}\n\nRecommendation: {recommendation}"
+                "text": alert.get("description", "No description provided.")
             },
             "locations": [
                 {
                     "physicalLocation": {
                         "artifactLocation": {
-                            "uri": f"{pkg_name}@{pkg_version}"
+                            "uri": sanitize_uri(alert.get("pkg_name", "unknown")),
+                            "uriBaseId": "%SRCROOT%"
+                        },
+                        "region": {
+                            "startLine": 1,
+                            "startColumn": 1
                         }
                     }
                 }
             ]
-        })
+        }
+        sarif_data["runs"][0]["results"].append(result)
 
-    print("Writing SARIF file...")
     with open(output_file, "w") as f:
         json.dump(sarif_data, f, indent=2)
-    print(f"SARIF file written successfully to {output_file}.")
+        print(f"SARIF file written successfully to {output_file}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Convert Socket results to SARIF.")
-    parser.add_argument("--socket_results", required=True, help="Path to the Socket results JSON file.")
-    parser.add_argument("--output_file", required=True, help="Path to save the generated SARIF file.")
-
+    parser = argparse.ArgumentParser(description="Convert Socket CLI results to SARIF format.")
+    parser.add_argument("--socket_results", required=True, help="Path to the socket_results.json file")
+    parser.add_argument("--output_file", required=True, help="Path to save the SARIF output file")
     args = parser.parse_args()
 
-    print(f"Loading Socket CLI results from {args.socket_results}...")
+    if not os.path.exists(args.socket_results) or os.path.getsize(args.socket_results) == 0:
+        print(f"Error: Input file {args.socket_results} is missing or empty.")
+        sys.exit(1)
+
     try:
         with open(args.socket_results, "r") as f:
             socket_results = json.load(f)
     except json.JSONDecodeError as e:
-        print(f"Error: Failed to parse JSON file {args.socket_results}. {e}")
-        exit(1)
+        print(f"Error decoding JSON from {args.socket_results}: {e}")
+        sys.exit(1)
 
-    print("Processing Socke
+    generate_sarif(socket_results, args.output_file)
