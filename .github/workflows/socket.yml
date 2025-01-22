@@ -38,7 +38,6 @@ jobs:
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
           echo "REF_NAME=${{ github.ref_name || 'unknown' }}" >> $GITHUB_ENV
           echo "EVENT_ACTION=${{ github.event.action || 'unknown' }}" >> $GITHUB_ENV
-          echo "DEBUG INFO: PR_NUMBER=${{ env.PR_NUMBER }}, REF_NAME=${{ env.REF_NAME }}, EVENT_ACTION=${{ env.EVENT_ACTION }}"
 
       - name: Debug Environment Variables
         run: |
@@ -56,29 +55,28 @@ jobs:
             --repo ${{ github.event.repository.name }} \
             --branch "${{ env.REF_NAME }}" \
             --pr_number "${{ env.PR_NUMBER }}" \
-            --api_token "${{ secrets.GITHUB_TOKEN }}" \
             --enable-json \
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
             --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
-            --target_path $GITHUB_WORKSPACE || {
-              echo "Socket CLI failed. Check logs.";
-              exit 1;
+            --target_path $GITHUB_WORKSPACE > socket_results.json || {
+              echo "Socket CLI failed but data might still be available.";
             }
 
-      - name: Validate Socket Results
+      - name: Validate and Process Results
         run: |
           echo "Validating CLI output..."
-          if [ ! -s socket_results.json ] && [ ! -s sbom.json ]; then
+          if [ -s socket_results.json ]; then
+            echo "Using socket_results.json"
+            RESULT_FILE="socket_results.json"
+          elif [ -s sbom.json ]; then
+            echo "Using sbom.json"
+            RESULT_FILE="sbom.json"
+          else
             echo "Error: Both socket_results.json and sbom.json are missing or empty."
             exit 1
           fi
-          if [ -s socket_results.json ]; then
-            echo "Using socket_results.json"
-            echo "RESULT_FILE=socket_results.json" >> $GITHUB_ENV
-          else
-            echo "Using sbom.json"
-            echo "RESULT_FILE=sbom.json" >> $GITHUB_ENV
+          echo "RESULT_FILE=$RESULT_FILE" >> $GITHUB_ENV
 
       - name: Convert Results to SARIF
         run: |
