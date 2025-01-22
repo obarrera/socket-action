@@ -18,19 +18,19 @@ def convert_to_sarif(input_file, output_file, repo_path):
     print(f"Loading results from {input_file}...")
     if not debug_input_file(input_file):
         print("Ensure the CLI generated a valid output.")
-        exit(1)
+        return
 
     try:
         with open(input_file, "r") as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
         print(f"Failed to parse JSON from {input_file}: {e}")
-        exit(1)
+        return
 
     if not data.get("new_alerts"):
         print("No new alerts found in input file.")
         print(f"Full scan ID: {data.get('full_scan_id', 'N/A')}")
-        return  # Do not exit, allow the workflow to continue
+        return
 
     sarif_data = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
