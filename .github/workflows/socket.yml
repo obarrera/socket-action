@@ -51,11 +51,15 @@ jobs:
             --branch "${{ github.ref_name }}" \
             $(if [ ! -z $DEFAULT_BRANCH ]; then echo "--default_branch"; fi) \
             --enable-json \
-            --sbom-file \
+            --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
             --commit_message "${{ github.event.head_commit.message }}" \
             --target_path $GITHUB_WORKSPACE > socket_results.json
         continue-on-error: true
+
+      - name: Debug SBOM File
+        if: always()
+        run: cat sbom.json || echo "sbom.json does not exist or is empty."
 
       - name: Debug Socket Results
         if: always()
