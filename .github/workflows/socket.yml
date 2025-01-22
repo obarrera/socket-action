@@ -78,8 +78,7 @@ jobs:
             --pr_number $(if [ -z $PR_NUMBER ]; then echo 0; else echo $PR_NUMBER;fi) \
             --committer "$GITHUB_ACTOR" \
             --commit_message "$COMMIT_MESSAGE" \
-            --target_path $GITHUB_WORKSPACE \
-            --output_file "socket_results.json"
+            --target_path $GITHUB_WORKSPACE > socket_results.json
 
       - name: Convert Socket Results to SARIF
         run: |
