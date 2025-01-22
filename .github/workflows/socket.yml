@@ -40,6 +40,7 @@ jobs:
           echo "Saving environment variables for PR and branch..."
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
           echo "REF_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "EVENT_ACTION=${{ github.event.action || 'opened' }}" >> $GITHUB_ENV  # Default to 'opened'
 
       - name: Debug Environment Variables
         run: |
@@ -47,15 +48,17 @@ jobs:
           echo "Event Name: ${{ github.event_name }}"
           echo "PR Number: ${{ env.PR_NUMBER }}"
           echo "Branch Name: ${{ env.REF_NAME }}"
-          printenv | grep -E "PR_NUMBER|REF_NAME"
+          echo "Event Action: ${{ env.EVENT_ACTION }}"
+          printenv | grep -E "PR_NUMBER|REF_NAME|EVENT_ACTION"
 
       - name: Run Socket Scan
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_ACTION: ${{ env.EVENT_ACTION }}
         run: |
           echo "Running Socket CLI..."
-          set -x
+          set -x  # Enable detailed command logging
           socketcli --scm github \
             --repo ${{ github.event.repository.name }} \
             --branch "${{ env.REF_NAME }}" \
@@ -64,7 +67,10 @@ jobs:
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
             --commit_message "${{ github.event.head_commit.message }}" \
-            --target_path $GITHUB_WORKSPACE > socket_results.json || echo "Socket CLI failed with non-zero exit code."
+            --target_path $GITHUB_WORKSPACE || {
+              echo "Socket CLI failed. Check logs below:";
+              exit 1;
+            }
 
       - name: Validate Socket Results
         run: |
@@ -78,6 +84,7 @@ jobs:
             echo "Socket results validated successfully."
             cat socket_results.json
           fi
+        shell: bash
 
       - name: Convert Socket Results to SARIF
         run: |
