@@ -19,8 +19,9 @@ def convert_to_sarif(input_file, output_file):
         with open(input_file, 'r') as f:
             data = json.load(f)
     except Exception as e:
-        print(f"Failed to load input file: {e}")
-        exit(1)
+        print(f"Error: Failed to load input file: {e}")
+        create_red_comment("Failed to load input file. Check the JSON structure or file path.")
+        return
 
     # Debug the raw data received
     print(f"Debug: Raw CLI JSON data: {json.dumps(data, indent=2)}")
@@ -28,11 +29,13 @@ def convert_to_sarif(input_file, output_file):
     # Validate and ensure "new_alerts" exists
     if "new_alerts" not in data:
         print("Error: 'new_alerts' key is missing in the input data.")
-        exit(1)
+        create_red_comment("'new_alerts' key is missing in the input data. Ensure the CLI generates valid JSON.")
+        return
 
     if not data["new_alerts"]:
-        print("No new alerts found in input data.")
-        exit(0)
+        print("Info: No new alerts found in input data.")
+        create_red_comment("No new alerts found. Ensure the CLI output matches the expectations.")
+        return
 
     sarif_data = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
@@ -98,6 +101,7 @@ def convert_to_sarif(input_file, output_file):
             sarif_data["runs"][0]["results"].append(result)
         except Exception as e:
             print(f"Error processing alert: {e}")
+            create_red_comment(f"Error processing alert: {e}")
             continue
 
     # Debug the final SARIF structure
@@ -111,7 +115,11 @@ def convert_to_sarif(input_file, output_file):
         print(f"SARIF file successfully written to {output_file}.")
     except Exception as e:
         print(f"Failed to write SARIF file: {e}")
-        exit(1)
+        create_red_comment(f"Failed to write SARIF file: {e}")
+
+
+def create_red_comment(message):
+    print(f"::error::{message}")
 
 
 if __name__ == "__main__":
