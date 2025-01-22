@@ -71,7 +71,7 @@ def convert_to_sarif(socket_results, output_file):
                 {
                     "physicalLocation": {
                         "artifactLocation": {
-                            "uri": f"{package_name}@{package_version}"
+                            "uri": f"file://{package_name}@{package_version}"
                         },
                         "region": {
                             "startLine": 1,
