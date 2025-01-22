@@ -1,28 +1,14 @@
+import os
 import json
 import argparse
-import os
 from collections import defaultdict
-
-def map_severity_to_sarif(severity):
-    """
-    Map severity levels from JSON to SARIF-compliant levels.
-    :param severity: Severity level from JSON.
-    :return: SARIF-compliant severity level.
-    """
-    severity_mapping = {
-        "low": "note",
-        "medium": "warning",
-        "middle": "warning",  # Handle alternate naming
-        "high": "error",
-        "critical": "error"
-    }
-    return severity_mapping.get(severity.lower(), "note")
 
 def parse_socket_results(socket_results):
     """
-    Parse the JSON results from Socket and structure them for SARIF.
+    Parse the JSON results from Socket CLI and structure them for SARIF.
     """
     parsed_data = defaultdict(list)
+
     for issue in socket_results.get('issues', []):
         issue_type = issue.get('type', 'Unknown')
         label = issue.get('label', 'No Label')
@@ -75,6 +61,19 @@ def parse_socket_results(socket_results):
         })
 
     return parsed_data
+
+def map_severity_to_sarif(severity):
+    """
+    Map severity levels from JSON to SARIF-compliant levels.
+    """
+    severity_mapping = {
+        "low": "note",
+        "medium": "warning",
+        "middle": "warning",
+        "high": "error",
+        "critical": "error"
+    }
+    return severity_mapping.get(severity.lower(), "note")
 
 def generate_sarif(parsed_data, output_file):
     """
