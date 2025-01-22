@@ -20,6 +20,7 @@ jobs:
       pull-requests: write
       security-events: write
     runs-on: ubuntu-latest
+    if: ${{ (github.event_name == 'push' && format('refs/heads/{0}', github.event.repository.default_branch) == github.ref) || github.event_name == 'pull_request' || github.event_name == 'issue_comment' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -31,7 +32,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          echo "Installing Socket CLI and dependencies..."
+          echo "Installing dependencies..."
           pip install socketsecurity --upgrade
 
       - name: Save PR and Branch Info
@@ -54,6 +55,7 @@ jobs:
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Running Socket CLI..."
+          set -x  # Enable command echoing for debugging
           socketcli --scm github \
             --repo ${{ github.event.repository.name }} \
             --branch "${{ env.REF_NAME }}" \
@@ -62,6 +64,7 @@ jobs:
             --enable-json \
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
+            --commit_message "${{ github.event.head_commit.message }}" \
             --target_path $GITHUB_WORKSPACE > socket_results.json || {
               echo "Socket CLI failed. Check logs below:";
               cat socket_results.json || echo "socket_results.json not created.";
