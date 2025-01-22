@@ -23,7 +23,10 @@ def convert_to_sarif(socket_results_path, output_file):
 
         # Load results from JSON
         with open(socket_results_path, 'r') as file:
-            socket_results = json.load(file)
+            try:
+                socket_results = json.load(file)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON content in {socket_results_path}: {e}")
 
         # Debugging: Log loaded JSON
         print("Loaded Socket results:")
