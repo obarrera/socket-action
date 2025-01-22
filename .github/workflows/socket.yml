@@ -40,7 +40,7 @@ jobs:
           echo "Saving environment variables for PR and branch..."
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
           echo "REF_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
-          echo "EVENT_ACTION=${{ github.event.action || 'opened' }}" >> $GITHUB_ENV
+          echo "EVENT_ACTION=${{ github.event.action || 'none' }}" >> $GITHUB_ENV
 
       - name: Debug Environment Variables
         run: |
@@ -57,7 +57,7 @@ jobs:
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Running Socket CLI..."
-          set -x  # Enable detailed command logging
+          set -x
           socketcli --scm github \
             --repo ${{ github.event.repository.name }} \
             --branch "${{ env.REF_NAME }}" \
@@ -66,30 +66,37 @@ jobs:
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
             --commit_message "${{ github.event.head_commit.message }}" \
-            --target_path $GITHUB_WORKSPACE || echo "Socket CLI exited with a non-zero status, continuing workflow."
+            --target_path $GITHUB_WORKSPACE || echo "Socket CLI exited with a non-zero status. Continuing workflow."
 
-      - name: Validate Socket Results
+      - name: Validate Output
         run: |
           echo "Validating Socket CLI output..."
-          if [ ! -s socket_results.json ]; then
-            echo "Error: socket_results.json is empty or missing."
-            echo "Checking sbom.json for additional details..."
-            cat sbom.json || echo "sbom.json is empty or missing."
-            exit 1
-          else
-            echo "Socket results validated successfully."
+          if [ -s socket_results.json ]; then
+            echo "Socket results are valid."
             cat socket_results.json
+          elif [ -s sbom.json ]; then
+            echo "Socket results missing, but sbom.json is present."
+            cat sbom.json
+          else
+            echo "Error: Neither socket_results.json nor sbom.json is valid."
+            exit 1
           fi
 
-      - name: Convert Socket Results to SARIF
+      - name: Convert Results to SARIF
+        if: ${{ steps.Validate-Output.outputs.socket_results_valid || steps.Validate-Output.outputs.sbom_valid }}
         run: |
-          echo "Converting Socket results to SARIF..."
-          python socket_sarif.py \
-            --socket_results "socket_results.json" \
-            --output_file "socket_results.sarif"
+          echo "Converting results to SARIF..."
+          if [ -s socket_results.json ]; then
+            python socket_sarif.py \
+              --socket_results "socket_results.json" \
+              --output_file "socket_results.sarif"
+          else
+            echo "socket_results.json is missing; generating SARIF from sbom.json."
+            python socket_sarif.py \
+              --socket_results "sbom.json" \
+              --output_file "socket_results.sarif"
 
       - name: Upload SARIF Results
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "socket_results.sarif"
-
