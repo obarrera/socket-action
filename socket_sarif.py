@@ -1,22 +1,29 @@
-import os
-import sys
 import json
 import argparse
-
 
 def map_severity_to_sarif(severity):
     severity_mapping = {
         "low": "note",
         "medium": "warning",
-        "middle": "warning",  # Handle alternate naming
+        "middle": "warning",
         "high": "error",
-        "critical": "error"
+        "critical": "error",
     }
     return severity_mapping.get(severity.lower(), "note")
 
+def convert_to_sarif(input_file, output_file):
+    print(f"Loading results from {input_file}...")
+    try:
+        with open(input_file, 'r') as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"Failed to load input file: {e}")
+        exit(1)
 
-def generate_sarif_from_results(results, output_file):
-    print("Generating SARIF data from results...")
+    if "new_alerts" not in data:
+        print("No alerts found in input file.")
+        exit(1)
+
     sarif_data = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
         "version": "2.1.0",
@@ -26,67 +33,51 @@ def generate_sarif_from_results(results, output_file):
                     "driver": {
                         "name": "Socket Security",
                         "informationUri": "https://socket.dev",
-                        "rules": []
+                        "rules": [],
                     }
                 },
-                "results": []
+                "results": [],
             }
-        ]
+        ],
     }
 
-    rules = {}
-    for alert in results.get("new_alerts", []):
-        rule_id = alert.get("type", "unknown")
-        if rule_id not in rules:
-            rules[rule_id] = {
-                "id": rule_id,
-                "shortDescription": {"text": alert.get("title", "Unknown alert")},
-                "fullDescription": {"text": alert.get("description", "No description provided.")},
-                "help": {
-                    "text": alert.get("suggestion", "No suggestion provided."),
-                    "markdown": f"[Learn more]({alert.get('next_step_title', 'https://socket.dev')})"
-                }
-            }
+    for alert in data.get("new_alerts", []):
+        rule = {
+            "id": alert["type"],
+            "name": alert["title"],
+            "helpUri": "https://socket.dev",
+            "shortDescription": {"text": alert["description"]},
+            "fullDescription": {"text": alert["props"]["note"]},
+            "defaultConfiguration": {
+                "level": map_severity_to_sarif(alert["severity"])
+            },
+        }
 
-        sarif_data["runs"][0]["results"].append({
-            "ruleId": rule_id,
-            "level": map_severity_to_sarif(alert.get("severity", "note")),
-            "message": {"text": alert.get("description", "No description provided.")},
+        result = {
+            "ruleId": alert["type"],
+            "message": {"text": alert["description"]},
             "locations": [
                 {
                     "physicalLocation": {
-                        "artifactLocation": {
-                            "uri": alert.get("pkg_name", "unknown"),
-                            "uriBaseId": "%SRCROOT%"
-                        },
-                        "region": {"startLine": 1, "startColumn": 1}
+                        "artifactLocation": {"uri": alert["pkg_name"]},
+                        "region": {"startLine": 1, "startColumn": 1},
                     }
                 }
-            ]
-        })
+            ],
+        }
 
-    sarif_data["runs"][0]["tool"]["driver"]["rules"] = list(rules.values())
+        sarif_data["runs"][0]["tool"]["driver"]["rules"].append(rule)
+        sarif_data["runs"][0]["results"].append(result)
 
-    with open(output_file, "w") as f:
+    print(f"Writing SARIF data to {output_file}...")
+    with open(output_file, 'w') as f:
         json.dump(sarif_data, f, indent=2)
-        print(f"SARIF file written to {output_file}")
-
+    print(f"SARIF file successfully written to {output_file}.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Convert Socket CLI or SBOM results to SARIF format.")
-    parser.add_argument("--socket_results", required=True, help="Path to the results JSON file")
-    parser.add_argument("--output_file", required=True, help="Path to save the SARIF output file")
+    parser = argparse.ArgumentParser(description="Convert Socket results to SARIF.")
+    parser.add_argument("--socket_results", required=True, help="Input JSON results file.")
+    parser.add_argument("--output_file", required=True, help="Output SARIF file.")
     args = parser.parse_args()
 
-    if not os.path.exists(args.socket_results) or os.path.getsize(args.socket_results) == 0:
-        print(f"Error: Input file {args.socket_results} is missing or empty.")
-        sys.exit(1)
-
-    try:
-        with open(args.socket_results, "r") as f:
-            data = json.load(f)
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON from {args.socket_results}: {e}")
-        sys.exit(1)
-
-    generate_sarif_from_results(data, args.output_file)
+    convert_to_sarif(args.socket_results, args.output_file)
