@@ -1,27 +1,22 @@
 import json
-import sys
+import argparse
 import os
 
-
 def map_severity_to_sarif(severity):
-    """
-    Map severity levels from Socket CLI to SARIF severity.
-    """
     severity_mapping = {
         "low": "note",
         "medium": "warning",
         "middle": "warning",  # Handle alternate naming
         "high": "error",
-        "critical": "error"
+        "critical": "error",
     }
     return severity_mapping.get(severity.lower(), "note")
 
+def generate_sarif(socket_results_path, output_file):
+    with open(socket_results_path, 'r') as f:
+        socket_results = json.load(f)
 
-def convert_to_sarif(socket_results, output_file):
-    """
-    Convert Socket CLI results to SARIF format with verbose debug output.
-    """
-    sarif = {
+    sarif_data = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
         "version": "2.1.0",
         "runs": [
@@ -38,87 +33,44 @@ def convert_to_sarif(socket_results, output_file):
         ]
     }
 
-    print("Processing Socket CLI results...")
-    for alert in socket_results.get("new_alerts", []):
-        rule_id = alert.get("type", "unknown")
-        description = alert.get("description", "No description provided.")
-        severity = alert.get("severity", "low")
-        package_name = alert.get("pkg_name", "unknown")
-        package_version = alert.get("pkg_version", "unknown")
-        additional_note = alert.get("props", {}).get("note", "No additional information provided.")
-        suggestion = alert.get("suggestion", "No remediation steps provided.")
+    for alert in socket_results.get('new_alerts', []):
+        pkg_name = alert['pkg_name']
+        pkg_version = alert['pkg_version']
+        severity = map_severity_to_sarif(alert['severity'])
+        description = alert['description']
+        note = alert['props'].get('note', '')
 
-        # Add rule if it doesn't exist
-        existing_rules = [rule["id"] for rule in sarif["runs"][0]["tool"]["driver"]["rules"]]
-        if rule_id not in existing_rules:
-            sarif["runs"][0]["tool"]["driver"]["rules"].append({
-                "id": rule_id,
-                "name": alert.get("title", "Unknown Issue"),
-                "fullDescription": {
-                    "text": description
-                },
-                "defaultConfiguration": {
-                    "level": map_severity_to_sarif(severity)
-                },
-                "helpUri": alert.get("props", {}).get("helpUri", "https://socket.dev")
-            })
-
-        # Add result
-        uri_path = os.path.join("package", f"{package_name}@{package_version}")
-        print(f"Adding result for package: {package_name}@{package_version}")
-        sarif["runs"][0]["results"].append({
-            "ruleId": rule_id,
+        result = {
+            "ruleId": alert['type'],
+            "level": severity,
             "message": {
-                "text": f"{description}\n\nAdditional Information:\n{additional_note}\n\nSuggested Remediation:\n{suggestion}"
+                "text": f"{description}\n\n{note}"
             },
             "locations": [
                 {
                     "physicalLocation": {
                         "artifactLocation": {
-                            "uri": uri_path  # Use local path format
-                        },
-                        "region": {
-                            "startLine": 1,
-                            "startColumn": 1
+                            "uri": f"{pkg_name}@{pkg_version}",
+                            "uriBaseId": "%SRCROOT%"
                         }
                     }
                 }
-            ],
-            "relatedLocations": [
-                {
-                    "physicalLocation": {
-                        "artifactLocation": {
-                            "uri": f"https://socket.dev/pypi/package/{package_name}/overview/{package_version}"
-                        }
-                    },
-                    "message": {
-                        "text": f"View package details for {package_name}@{package_version}"
-                    }
-                }
-            ],
-            "partialFingerprints": {
-                "primaryLocationLineHash": alert.get("key", "unknown-key")
-            },
-            "level": map_severity_to_sarif(severity)
-        })
+            ]
+        }
+        sarif_data['runs'][0]['results'].append(result)
 
-    print(f"Writing SARIF file to {output_file}...")
-    with open(output_file, "w") as f:
-        json.dump(sarif, f, indent=2)
+    with open(output_file, 'w') as f:
+        json.dump(sarif_data, f, indent=2)
     print(f"SARIF file written successfully to {output_file}")
 
-
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python socket_sarif.py --socket_results <socket_results.json> --output_file <output.sarif>")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Convert Socket CLI results to SARIF format.")
+    parser.add_argument("--socket_results", required=True, help="Path to the Socket CLI results JSON file.")
+    parser.add_argument("--output_file", required=True, help="Path to the output SARIF file.")
+    args = parser.parse_args()
 
-    socket_results_file = sys.argv[sys.argv.index("--socket_results") + 1]
-    output_file = sys.argv[sys.argv.index("--output_file") + 1]
+    if not os.path.exists(args.socket_results):
+        print(f"Error: {args.socket_results} does not exist.")
+        exit(1)
 
-    print(f"Loading Socket CLI results from {socket_results_file}...")
-    with open(socket_results_file, "r") as f:
-        socket_results = json.load(f)
-
-    convert_to_sarif(socket_results, output_file)
-    print(f"SARIF generation completed. File saved at {output_file}.")
+    generate_sarif(args.socket_results, args.output_file)
