@@ -32,7 +32,7 @@ jobs:
       - name: Install Dependencies
         run: pip install socketsecurity --upgrade
 
-      - name: Save PR Information
+      - name: Save PR and Branch Info
         run: |
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
           echo "REF_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
@@ -50,6 +50,7 @@ jobs:
             --repo ${{ github.event.repository.name }} \
             --branch "${{ env.REF_NAME }}" \
             --pr_number "${{ env.PR_NUMBER }}" \
+            $(if [ "${{ github.event_name }}" == "push" ]; then echo "--default_branch"; fi) \
             --enable-json \
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
