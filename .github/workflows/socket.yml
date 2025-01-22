@@ -72,7 +72,7 @@ jobs:
             --target_path $GITHUB_WORKSPACE > socket_results.json || {
               echo "Socket CLI failed. Printing logs..."
               cat socket_results.json || echo "socket_results.json not found."
-              exit 1
+              exit 0 # Allow workflow to continue to process available results.
             }
 
       - name: Validate Socket Results
@@ -82,6 +82,8 @@ jobs:
             exit 1
           else
             echo "socket_results.json is valid."
+            echo "Contents of socket_results.json:"
+            cat socket_results.json
           fi
 
       - name: Convert Socket Results to SARIF
