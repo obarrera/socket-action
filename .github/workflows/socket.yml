@@ -17,6 +17,7 @@ jobs:
       contents: read
       security-events: write
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -29,6 +30,14 @@ jobs:
       - name: Install Dependencies
         run: pip install socketsecurity --upgrade
 
+      - name: Debug Repository Info
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "PR Number: ${{ github.event.pull_request.number || 0 }}"
+          echo "Commit Message: ${{ github.event.head_commit.message }}"
+        shell: bash
+
       - name: Ensure GitHub API Token is Set
         run: |
           if [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
@@ -38,28 +47,29 @@ jobs:
             echo "GitHub token is available."
           fi
 
+      - name: Sanitize Repository Name
+        id: sanitize_repo_name
+        run: |
+          REPO_NAME=$(basename $GITHUB_REPOSITORY | sed 's/[^A-Za-z0-9]//g')
+          ORG_NAME=$(dirname $GITHUB_REPOSITORY | sed 's/[^A-Za-z0-9]//g')
+          echo "SANITIZED_REPO=${ORG_NAME}/${REPO_NAME}" >> $GITHUB_ENV
+
       - name: Run Socket CLI
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Sanitize repository name for CLI
-          REPO_NAME=$(basename $GITHUB_REPOSITORY | tr -d '.')
-          ORG_NAME=$(dirname $GITHUB_REPOSITORY)
-          SANITIZED_REPO="$ORG_NAME/$REPO_NAME"
-
-          echo "Sanitized repo slug: $SANITIZED_REPO"
-
-          # Run CLI
+          echo "Running Socket CLI..."
           socketcli --scm github \
-            --repo "$SANITIZED_REPO" \
+            --repo "${{ env.SANITIZED_REPO }}" \
             --branch "${{ github.ref_name }}" \
             --pr_number "${{ github.event.pull_request.number || 0 }}" \
             --enable-json \
             --sbom-file "sbom.json" \
+            --commit_message "${{ github.event.head_commit.message }}" \
             --target_path $GITHUB_WORKSPACE > socket_results.json || echo "Socket CLI failed."
 
-      - name: Debugging CLI Results
+      - name: Debug CLI Output
         run: |
           echo "CLI results in socket_results.json:"
           cat socket_results.json || echo "socket_results.json is empty or missing."
