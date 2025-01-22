@@ -5,25 +5,31 @@ on:
     branches:
       - main
   pull_request:
+    branches:
+      - main
 
 jobs:
-  socket-scan:
+  socket_scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Dependencies
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install socketsecurity requests
+          pip install socketsecurity
 
       - name: Save Environment Variables
         run: |
           echo "Saving environment variables..."
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
           echo "REF_NAME=${{ github.ref_name || 'unknown' }}" >> $GITHUB_ENV
-          echo "EVENT_ACTION=${{ github.event.action || 'unknown' }}" >> $GITHUB_ENV
 
       - name: Debug Environment Variables
         run: |
@@ -31,61 +37,41 @@ jobs:
           printenv | grep -E "PR_NUMBER|REF_NAME|EVENT_ACTION"
 
       - name: Run Socket CLI
-        env:
-          SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
-          GH_API_TOKEN: ${{ secrets.GH_API_TOKEN }}
         run: |
           echo "Running Socket CLI with debug mode enabled..."
-          set -x
-          socketcli --scm github \
-            --repo ${{ github.repository }} \
-            --branch "${{ env.REF_NAME }}" \
-            --pr_number "${{ env.PR_NUMBER }}" \
-            --enable-json \
-            --enable-debug \
-            --sbom-file "sbom.json" \
-            --committer "$GITHUB_ACTOR" \
-            --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
-            --target_path $GITHUB_WORKSPACE || {
-              echo "Socket CLI failed but data might still be available.";
-            }
-
-      - name: Delay for CLI Processing
-        run: sleep 10
+          for i in {1..3}; do
+            socketcli --scm github \
+              --repo obarrera/socket-action \
+              --branch $REF_NAME \
+              --pr_number $PR_NUMBER \
+              --enable-json \
+              --enable-debug \
+              --sbom-file sbom.json \
+              --committer obarrera \
+              --commit_message "${{ github.event.head_commit.message || 'Update' }}" \
+              --target_path /home/runner/work/socket-action/socket-action && break || sleep 10
+          done
 
       - name: Validate CLI Output
         run: |
           echo "Validating CLI output..."
-          if [ -f "socket_results.json" ]; then
-            echo "socket_results.json found."
-            cat socket_results.json
-          else
-            echo "Error: socket_results.json is missing."
+          if [ ! -s "socket_results.json" ]; then
+            echo "Error: socket_results.json is missing or empty."
+            exit 0
           fi
-          if [ -f "sbom.json" ]; then
-            echo "sbom.json found."
-            cat sbom.json
-          else
-            echo "Error: sbom.json is missing."
+          if [ ! -s "sbom.json" ]; then
+            echo "Error: sbom.json is missing or empty."
+            exit 0
           fi
 
-      - name: Parse Results to SARIF
+      - name: Convert JSON to SARIF
         run: |
-          if [ -s "socket_results.json" ]; then
-            echo "Converting socket_results.json to SARIF..."
-            python socket_sarif.py \
-              --socket_results "socket_results.json" \
-              --output_file "socket_results.sarif"
-          elif [ -s "sbom.json" ]; then
-            echo "Converting sbom.json to SARIF..."
-            python socket_sarif.py \
-              --socket_results "sbom.json" \
-              --output_file "socket_results.sarif"
-          else
-            echo "Error: Both socket_results.json and sbom.json are missing or empty."
-            exit 1
+          echo "Converting results to SARIF..."
+          python socket_sarif.py \
+            --socket_results "socket_results.json" \
+            --output_file "socket_results.sarif"
 
-      - name: Upload SARIF to GitHub
+      - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: socket_results.sarif
