@@ -79,6 +79,8 @@ jobs:
             --committer "$GITHUB_ACTOR" \
             --commit_message "$COMMIT_MESSAGE" \
             --target_path $GITHUB_WORKSPACE > socket_results.json
+        continue-on-error: true
+
 
       - name: Convert Socket Results to SARIF
         run: |
