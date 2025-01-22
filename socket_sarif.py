@@ -32,9 +32,22 @@ def generate_sarif_from_results(results, output_file):
         ]
     }
 
+    rules = {}
     for alert in results.get("new_alerts", []):
-        result = {
-            "ruleId": alert.get("type", "unknown"),
+        rule_id = alert.get("type", "unknown")
+        if rule_id not in rules:
+            rules[rule_id] = {
+                "id": rule_id,
+                "shortDescription": {"text": alert.get("title", "Unknown alert")},
+                "fullDescription": {"text": alert.get("description", "No description provided.")},
+                "help": {
+                    "text": alert.get("suggestion", "No suggestion provided."),
+                    "markdown": f"[Learn more about this issue]({alert.get('next_step_title', 'https://socket.dev')})"
+                }
+            }
+
+        sarif_data["runs"][0]["results"].append({
+            "ruleId": rule_id,
             "level": map_severity_to_sarif(alert.get("severity", "note")),
             "message": {"text": alert.get("description", "No description provided.")},
             "locations": [
@@ -48,8 +61,9 @@ def generate_sarif_from_results(results, output_file):
                     }
                 }
             ]
-        }
-        sarif_data["runs"][0]["results"].append(result)
+        })
+
+    sarif_data["runs"][0]["tool"]["driver"]["rules"] = list(rules.values())
 
     with open(output_file, "w") as f:
         json.dump(sarif_data, f, indent=2)
