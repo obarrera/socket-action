@@ -11,6 +11,14 @@ def map_severity_to_sarif(severity):
     }
     return severity_mapping.get(severity.lower(), "note")
 
+def fetch_code_snippet(file_path, start_line, num_lines=3):
+    try:
+        with open(file_path, 'r') as f:
+            lines = f.readlines()
+            return ''.join(lines[start_line - 1: start_line - 1 + num_lines])
+    except Exception as e:
+        return f"Could not fetch snippet: {e}"
+
 def convert_to_sarif(input_file, output_file):
     print(f"Loading results from {input_file}...")
     try:
@@ -53,14 +61,20 @@ def convert_to_sarif(input_file, output_file):
             },
         }
 
+        file_path = alert.get("pkg_name", "unknown")
+        start_line = 1  # Default to the first line if not provided
+
+        # Add a code snippet if the file exists
+        code_snippet = fetch_code_snippet(file_path, start_line)
+
         result = {
             "ruleId": alert["type"],
             "message": {"text": alert["description"]},
             "locations": [
                 {
                     "physicalLocation": {
-                        "artifactLocation": {"uri": alert["pkg_name"]},
-                        "region": {"startLine": 1, "startColumn": 1},
+                        "artifactLocation": {"uri": file_path},
+                        "region": {"startLine": start_line, "snippet": {"text": code_snippet}},
                     }
                 }
             ],
