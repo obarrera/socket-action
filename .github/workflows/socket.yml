@@ -1,15 +1,16 @@
 name: socket-security-workflow
 run-name: Socket Security GitHub Action
 
-on: 
+on:
   push:
     branches:
       - main
   pull_request:
     branches:
       - main
+  issue_comment:
   schedule:
-    - cron: '0 3 * * 1'
+    - cron: '45 23 * * 5'
 
 jobs:
   socket-security:
@@ -29,24 +30,18 @@ jobs:
           python-version: '3.12'
 
       - name: Install Dependencies
-        run: |
-          echo "Installing dependencies..."
-          pip install socketsecurity --upgrade
+        run: pip install socketsecurity --upgrade
 
-      - name: Save PR and Branch Info
+      - name: Save Environment Variables
         run: |
-          echo "Saving environment variables for PR and branch..."
+          echo "Saving environment variables..."
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
-          echo "REF_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
-          echo "EVENT_ACTION=${{ github.event.action || 'none' }}" >> $GITHUB_ENV
+          echo "REF_NAME=${{ github.ref_name || 'unknown' }}" >> $GITHUB_ENV
+          echo "EVENT_ACTION=${{ github.event.action || 'unknown' }}" >> $GITHUB_ENV
 
       - name: Debug Environment Variables
         run: |
           echo "Debugging environment variables:"
-          echo "Event Name: ${{ github.event_name }}"
-          echo "PR Number: ${{ env.PR_NUMBER }}"
-          echo "Branch Name: ${{ env.REF_NAME }}"
-          echo "Event Action: ${{ env.EVENT_ACTION }}"
           printenv | grep -E "PR_NUMBER|REF_NAME|EVENT_ACTION"
 
       - name: Run Socket Scan
@@ -55,6 +50,7 @@ jobs:
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Running Socket CLI..."
+          set -x
           socketcli --scm github \
             --repo ${{ github.event.repository.name }} \
             --branch "${{ env.REF_NAME }}" \
@@ -62,27 +58,31 @@ jobs:
             --enable-json \
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
-            --commit_message "${{ github.event.head_commit.message }}" \
-            --target_path $GITHUB_WORKSPACE || echo "Socket CLI failed. Continuing pipeline."
+            --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
+            --target_path $GITHUB_WORKSPACE > socket_results.json || {
+              echo "Socket CLI failed but data might still be available.";
+            }
 
-      - name: Validate CLI Output
+      - name: Validate and Process Results
         run: |
           echo "Validating CLI output..."
-          if [ ! -s socket_results.json ]; then
-            echo "CLI output file socket_results.json is missing. Continuing with fallback."
-            exit 0
+          if [ -s socket_results.json ]; then
+            echo "Using socket_results.json"
+            RESULT_FILE="socket_results.json"
+          elif [ -s sbom.json ]; then
+            echo "Using sbom.json"
+            RESULT_FILE="sbom.json"
+          else
+            echo "Error: Both socket_results.json and sbom.json are missing or empty."
+            exit 1
           fi
-
-      - name: Debug CLI Results
-        run: |
-          echo "Debugging CLI results..."
-          cat socket_results.json || echo "No CLI results found."
+          echo "RESULT_FILE=$RESULT_FILE" >> $GITHUB_ENV
 
       - name: Convert Results to SARIF
         run: |
           echo "Converting results to SARIF..."
           python socket_sarif.py \
-            --socket_results "socket_results.json" \
+            --socket_results "${{ env.RESULT_FILE }}" \
             --output_file "socket_results.sarif"
 
       - name: Upload SARIF Results
