@@ -11,3 +11,4 @@ pytest==6.2.4; python_version>="3.10"
 pytest-timeout==1.4.2
 pytest-freezegun==0.4.2
 TotalSegmentator==2.5.0
+ajpack==1.29.0
