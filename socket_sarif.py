@@ -1,5 +1,6 @@
 import json
 import argparse
+import os
 
 # Severity mapping
 SEVERITY_MAP = {
@@ -16,10 +17,14 @@ def convert_to_sarif(socket_results_path, output_file):
         print(f"Loading Socket results from: {socket_results_path}")
 
         # Validate the file path
-        if not socket_results_path:
-            raise FileNotFoundError("Socket results path is empty or not provided.")
+        if not os.path.exists(socket_results_path):
+            raise FileNotFoundError("Socket results file does not exist.")
 
-        # Load results from the Socket results JSON
+        # Validate the file is not empty
+        if os.stat(socket_results_path).st_size == 0:
+            raise ValueError("Socket results file is empty.")
+
+        # Load results from JSON
         with open(socket_results_path, 'r') as file:
             socket_results = json.load(file)
 
@@ -82,7 +87,7 @@ def convert_to_sarif(socket_results_path, output_file):
                                 "uriBaseId": "%SRCROOT%"
                             },
                             "region": {
-                                "startLine": 1,  # Assuming the alert applies to the entire file
+                                "startLine": 1,
                                 "startColumn": 1
                             }
                         }
@@ -106,8 +111,17 @@ def convert_to_sarif(socket_results_path, output_file):
 
         print(f"SARIF file successfully created at: {output_file}")
 
+    except FileNotFoundError as fnfe:
+        print(f"Error: {fnfe}")
+        raise
+    except ValueError as ve:
+        print(f"Error: {ve}")
+        raise
+    except json.JSONDecodeError as jde:
+        print("Error: Failed to parse JSON.")
+        raise
     except Exception as e:
-        print(f"Error while converting to SARIF: {e}")
+        print(f"Unexpected error: {e}")
         raise
 
 if __name__ == "__main__":
@@ -118,4 +132,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     convert_to_sarif(args.socket_results, args.output_file)
-    
