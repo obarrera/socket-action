@@ -31,7 +31,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          echo "Installing Socket CLI..."
+          echo "Installing Socket CLI and dependencies..."
           pip install socketsecurity --upgrade
 
       - name: Save PR and Branch Info
@@ -62,15 +62,19 @@ jobs:
             --enable-json \
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
-            --target_path $GITHUB_WORKSPACE > socket_results.json || echo "Socket CLI failed. Printing logs..."
-          echo "Socket CLI completed."
-          cat socket_results.json || echo "socket_results.json is empty or missing."
+            --target_path $GITHUB_WORKSPACE > socket_results.json || {
+              echo "Socket CLI failed. Check logs below:";
+              cat socket_results.json || echo "socket_results.json not created.";
+              exit 1;
+            }
 
       - name: Validate Socket Results
         run: |
           echo "Validating Socket CLI output..."
           if [ ! -s socket_results.json ]; then
             echo "Error: socket_results.json is empty or missing."
+            echo "Checking sbom.json for additional details..."
+            cat sbom.json || echo "sbom.json is empty or missing."
             exit 1
           fi
         shell: bash
