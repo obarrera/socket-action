@@ -1,5 +1,7 @@
 import json
 import argparse
+import os
+
 
 def map_severity_to_sarif(severity):
     severity_mapping = {
@@ -11,6 +13,7 @@ def map_severity_to_sarif(severity):
     }
     return severity_mapping.get(severity.lower(), "note")
 
+
 def fetch_code_snippet(file_path, start_line, num_lines=3):
     try:
         with open(file_path, 'r') as f:
@@ -19,8 +22,20 @@ def fetch_code_snippet(file_path, start_line, num_lines=3):
     except Exception as e:
         return f"Could not fetch snippet: {e}"
 
+
+def validate_data(data):
+    if not isinstance(data, dict):
+        raise ValueError("Input data is not a valid JSON object.")
+    if "new_alerts" not in data:
+        raise ValueError("'new_alerts' key is missing in the input data.")
+    if not data.get("new_alerts", []):
+        print("No new alerts found in input data.")
+    return True
+
+
 def convert_to_sarif(input_file, output_file):
     print(f"Loading results from {input_file}...")
+
     try:
         with open(input_file, 'r') as f:
             data = json.load(f)
@@ -30,9 +45,11 @@ def convert_to_sarif(input_file, output_file):
         print(f"Failed to load input file: {e}")
         exit(1)
 
-    if "new_alerts" not in data or not data.get("new_alerts", []):
-        print("No alerts found in input file.")
-        #exit(1)
+    try:
+        validate_data(data)
+    except ValueError as e:
+        print(f"Validation error: {e}")
+        exit(1)
 
     sarif_data = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
@@ -60,14 +77,14 @@ def convert_to_sarif(input_file, output_file):
             "name": alert["title"],
             "helpUri": "https://socket.dev",
             "shortDescription": {"text": alert["description"]},
-            "fullDescription": {"text": alert["props"]["note"]},
+            "fullDescription": {"text": alert["props"].get("note", "No additional information available.")},
             "defaultConfiguration": {
                 "level": map_severity_to_sarif(alert["severity"])
             },
         }
 
         file_path = alert.get("pkg_name", "unknown")
-        start_line = 1  # Default to the first line if not provided
+        start_line = alert.get("start_line", 1)  # Default to the first line if not provided
 
         # Add a code snippet if the file exists
         code_snippet = fetch_code_snippet(file_path, start_line)
@@ -95,9 +112,14 @@ def convert_to_sarif(input_file, output_file):
     print(json.dumps(sarif_data, indent=2))
 
     print(f"Writing SARIF data to {output_file}...")
-    with open(output_file, 'w') as f:
-        json.dump(sarif_data, f, indent=2)
-    print(f"SARIF file successfully written to {output_file}.")
+    try:
+        with open(output_file, 'w') as f:
+            json.dump(sarif_data, f, indent=2)
+        print(f"SARIF file successfully written to {output_file}.")
+    except Exception as e:
+        print(f"Failed to write SARIF file: {e}")
+        exit(1)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert Socket results to SARIF.")
@@ -108,5 +130,10 @@ if __name__ == "__main__":
     # Debugging: Log script arguments
     print(f"Input file: {args.socket_results}")
     print(f"Output file: {args.output_file}")
+
+    # Check if input file exists
+    if not os.path.exists(args.socket_results):
+        print(f"Error: Input file '{args.socket_results}' does not exist.")
+        exit(1)
 
     convert_to_sarif(args.socket_results, args.output_file)
