@@ -14,7 +14,7 @@ def map_severity_to_sarif(severity):
     severity_mapping = {
         "low": "note",
         "medium": "warning",
-        "middle": "warning",  # Handle alternate naming
+        "middle": "warning",
         "high": "error",
         "critical": "error"
     }
@@ -73,15 +73,16 @@ if __name__ == "__main__":
     parser.add_argument("--output_file", required=True, help="Path to save the SARIF output file")
     args = parser.parse_args()
 
-    if not os.path.exists(args.socket_results) or os.path.getsize(args.socket_results) == 0:
-        print(f"Error: Input file {args.socket_results} is missing or empty.")
+    input_file = args.socket_results
+    if not os.path.exists(input_file) or os.path.getsize(input_file) == 0:
+        print(f"Error: Input file {input_file} is missing or empty.")
         sys.exit(1)
 
     try:
-        with open(args.socket_results, "r") as f:
+        with open(input_file, "r") as f:
             socket_results = json.load(f)
     except json.JSONDecodeError as e:
-        print(f"Error decoding JSON from {args.socket_results}: {e}")
+        print(f"Error decoding JSON from {input_file}: {e}")
         sys.exit(1)
 
     generate_sarif(socket_results, args.output_file)
