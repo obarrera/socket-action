@@ -3,15 +3,17 @@ import sys
 import json
 import argparse
 
+
 def map_severity_to_sarif(severity):
     severity_mapping = {
         "low": "note",
         "medium": "warning",
-        "middle": "warning",
+        "middle": "warning",  # Handle alternate naming
         "high": "error",
         "critical": "error"
     }
     return severity_mapping.get(severity.lower(), "note")
+
 
 def generate_sarif_from_results(results, output_file):
     print("Generating SARIF data from results...")
@@ -42,7 +44,7 @@ def generate_sarif_from_results(results, output_file):
                 "fullDescription": {"text": alert.get("description", "No description provided.")},
                 "help": {
                     "text": alert.get("suggestion", "No suggestion provided."),
-                    "markdown": f"[Learn more about this issue]({alert.get('next_step_title', 'https://socket.dev')})"
+                    "markdown": f"[Learn more]({alert.get('next_step_title', 'https://socket.dev')})"
                 }
             }
 
@@ -68,6 +70,7 @@ def generate_sarif_from_results(results, output_file):
     with open(output_file, "w") as f:
         json.dump(sarif_data, f, indent=2)
         print(f"SARIF file written to {output_file}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert Socket CLI or SBOM results to SARIF format.")
