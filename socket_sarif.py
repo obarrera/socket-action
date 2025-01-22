@@ -15,6 +15,10 @@ def convert_to_sarif(socket_results_path, output_file):
         # Debugging: Log file path
         print(f"Loading Socket results from: {socket_results_path}")
 
+        # Validate the file path
+        if not socket_results_path:
+            raise FileNotFoundError("Socket results path is empty or not provided.")
+
         # Load results from the Socket results JSON
         with open(socket_results_path, 'r') as file:
             socket_results = json.load(file)
