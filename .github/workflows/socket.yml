@@ -1,7 +1,7 @@
 name: socket-security-workflow
 run-name: Socket Security GitHub Action
 
-on:
+on: 
   push:
     branches:
       - main
@@ -33,52 +33,88 @@ jobs:
       - name: Install Dependencies
         run: pip install socketsecurity --upgrade
 
+      - name: Set Socket API Key
+        run: echo "SOCKET_SECURITY_API_KEY=${{ secrets.SOCKET_SECURITY_API_KEY }}" >> $GITHUB_ENV
+
+      - name: Get PR State
+        if: github.event_name == 'pull_request'
+        run: echo "EVENT_ACTION=${{ github.event.action }}" >> $GITHUB_ENV
+
+      - name: Check if Default Branch
+        if: ${{ always() && format('refs/heads/{0}', github.event.repository.default_branch) == github.ref }}
+        run: echo "DEFAULT_BRANCH=1" >> $GITHUB_ENV
+
+      - uses: actions/github-script@v7
+        id: get_pr_data
+        with:
+          script: |
+              let data = (
+                await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                  commit_sha: context.sha,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                })
+              ).data[0];
+              if (data === undefined) {
+                data = {
+                  'number': null,
+                  'title': null
+                }
+              }
+              
+              return data;
+
+      - name: Save Pull Request Number
+        run: |
+          echo "PR_NUMBER=${{ fromJson(steps.get_pr_data.outputs.result).number || github.event.issue.number || github.event.number }}" >> $GITHUB_ENV
+
       - name: Detect Changed Files
         id: changed-files
         run: |
           if ${{ github.event_name == 'pull_request' }}; then
+              git fetch --depth=2
               echo "changed_files=$(git diff --name-only -r HEAD^1 HEAD || true)" >> $GITHUB_OUTPUT
           else
               echo "changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} || true)" >> $GITHUB_OUTPUT
           fi
 
-      - name: Save Pull Request Number
-        run: |
-          echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
-
-      - name: Debug Environment
+      - name: Debug Environment Variables
         run: printenv | grep SOCKET
 
       - name: Run Socket Scan
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          export SOCKET_SECURITY_API_KEY="${{ secrets.SOCKET_SECURITY_API_KEY }}"
           socketcli --scm github \
             --repo ${{ github.event.repository.name }} \
             --branch "${{ github.ref_name }}" \
-            --pr_number $PR_NUMBER \
+            --pr_number $(if [ -z $PR_NUMBER ]; then echo 0; else echo $PR_NUMBER;fi) \
             $(if [ ! -z $DEFAULT_BRANCH ]; then echo "--default_branch"; fi) \
             --enable-json \
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
-            --commit_message "${{ github.event.head_commit.message }}" \
+            --commit_message "$COMMIT_MESSAGE" \
             --target_path $GITHUB_WORKSPACE > socket_results.json
         continue-on-error: true
+
+      - name: Debug Socket CLI Logs
+        if: always()
+        run: cat socket_results.json || echo "socket_results.json does not exist or is empty."
 
       - name: Debug SBOM File
         if: always()
         run: cat sbom.json || echo "sbom.json does not exist or is empty."
 
-      - name: Debug Socket Results
-        if: always()
-        run: cat socket_results.json || echo "socket_results.json does not exist or is empty."
-
-      - name: Validate Socket Results
+      - name: Validate Output Files
         run: |
-          if [ ! -s socket_results.json ]; then
-            echo "Error: socket_results.json is empty or missing."
+          if [ ! -f socket_results.json ]; then
+            echo "Error: socket_results.json not found."
+            exit 1
+          fi
+          if [ ! -f sbom.json ]; then
+            echo "Error: sbom.json not found."
             exit 1
           fi
 
