@@ -44,24 +44,29 @@ def convert_to_sarif(socket_results_path, output_file):
             ]
         }
 
-        # Populate SARIF rules and results
-        for alert in socket_results.get('alerts', []):
-            rule_id = alert.get('rule_id', 'unknown')
+        # Process each new alert in the results
+        for alert in socket_results.get('new_alerts', []):
+            rule_id = alert.get('type', 'unknown')
             description = alert.get('description', 'No description provided.')
-            file_path = alert.get('file', 'unknown_file')
+            file_path = alert.get('manifests', 'unknown_file')
             severity = SEVERITY_MAP.get(alert.get('severity', 'info').lower(), 'note')
+            alert_title = alert.get('title', 'Unknown issue')
+            suggestion = alert.get('suggestion', 'No suggestion provided.')
 
             # Debugging: Log each alert being processed
-            print(f"Processing alert: {rule_id}, severity: {severity}, file: {file_path}")
+            print(f"Processing alert: {alert_title}, severity: {severity}, file: {file_path}")
 
-            # Add rule
+            # Add rule to SARIF
             sarif_data["runs"][0]["tool"]["driver"]["rules"].append({
                 "id": rule_id,
+                "name": alert_title,
                 "shortDescription": {"text": description},
-                "defaultConfiguration": {"level": severity}
+                "fullDescription": {"text": alert.get('props', {}).get('note', '')},
+                "defaultConfiguration": {"level": severity},
+                "help": {"text": suggestion}
             })
 
-            # Add result
+            # Add result to SARIF
             sarif_data["runs"][0]["results"].append({
                 "ruleId": rule_id,
                 "message": {"text": description},
@@ -73,12 +78,17 @@ def convert_to_sarif(socket_results_path, output_file):
                                 "uriBaseId": "%SRCROOT%"
                             },
                             "region": {
-                                "startLine": alert.get('line', 1),
-                                "startColumn": alert.get('column', 1)
+                                "startLine": 1,  # Assuming the alert applies to the entire file
+                                "startColumn": 1
                             }
                         }
                     }
-                ]
+                ],
+                "properties": {
+                    "packageName": alert.get('pkg_name'),
+                    "packageVersion": alert.get('pkg_version'),
+                    "packageUrl": alert.get('url')
+                }
             })
 
         # Debugging: Log SARIF data before writing
