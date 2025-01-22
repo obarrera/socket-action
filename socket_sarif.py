@@ -1,6 +1,6 @@
 import json
-import argparse
 import os
+import argparse
 
 
 def debug_input_file(input_file):
@@ -12,6 +12,14 @@ def debug_input_file(input_file):
         print(f"Error: File {input_file} is empty.")
         return False
     return True
+
+
+def sanitize_repo_slug(repo_slug):
+    """Sanitize the repository slug to ensure it meets API requirements."""
+    sanitized = ''.join(
+        c for c in repo_slug if c.isalnum() or c in ['.', '_', '-']
+    ).strip('.-_')
+    return sanitized[:100]
 
 
 def convert_to_sarif(input_file, output_file, repo_path):
