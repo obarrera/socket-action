@@ -3,45 +3,34 @@ import argparse
 import os
 
 
-def map_severity_to_sarif(severity):
-    severity_mapping = {
-        "low": "note",
-        "medium": "warning",
-        "middle": "warning",
-        "high": "error",
-        "critical": "error",
-    }
-    return severity_mapping.get(severity.lower(), "note")
-
-
-def fetch_code_snippet(file_path, line_number, num_lines=3):
-    """Fetch code snippet around the given line number."""
-    try:
-        with open(file_path, 'r') as f:
-            lines = f.readlines()
-            start = max(0, line_number - 1)
-            end = min(len(lines), line_number - 1 + num_lines)
-            return ''.join(lines[start:end])
-    except Exception as e:
-        return f"Could not fetch snippet: {e}"
+def debug_input_file(input_file):
+    """Check the file's existence and print debug information."""
+    if not os.path.exists(input_file):
+        print(f"Error: File {input_file} does not exist.")
+        return False
+    if os.path.getsize(input_file) == 0:
+        print(f"Error: File {input_file} is empty.")
+        return False
+    return True
 
 
 def convert_to_sarif(input_file, output_file, repo_path):
     print(f"Loading results from {input_file}...")
+    if not debug_input_file(input_file):
+        print("Ensure the CLI generated a valid output.")
+        exit(1)
+
     try:
-        with open(input_file, 'r') as f:
+        with open(input_file, "r") as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
-        print(f"Failed to load input file: {e}. Ensure the file is valid JSON.")
-        exit(1)
-    except Exception as e:
-        print(f"Unexpected error reading input file: {e}")
+        print(f"Failed to parse JSON from {input_file}: {e}")
         exit(1)
 
     if not data.get("new_alerts"):
         print("No new alerts found in input file.")
-        print("Full scan ID:", data.get("full_scan_id", "N/A"))
-        exit(0)  # Exit gracefully without failing the pipeline.
+        print(f"Full scan ID: {data.get('full_scan_id', 'N/A')}")
+        return  # Do not exit, allow the workflow to continue
 
     sarif_data = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
@@ -61,7 +50,6 @@ def convert_to_sarif(input_file, output_file, repo_path):
     }
 
     for alert in data["new_alerts"]:
-        # Add rule
         rule = {
             "id": alert["type"],
             "name": alert["title"],
@@ -69,17 +57,9 @@ def convert_to_sarif(input_file, output_file, repo_path):
             "shortDescription": {"text": alert["description"]},
             "fullDescription": {"text": alert["props"].get("note", "")},
             "defaultConfiguration": {
-                "level": map_severity_to_sarif(alert["severity"]),
+                "level": alert["severity"].lower()
             },
         }
-
-        file_path = os.path.join(repo_path, alert.get("pkg_name", "unknown"))
-        line_number = alert.get("line", 1)
-
-        if os.path.exists(file_path):
-            code_snippet = fetch_code_snippet(file_path, line_number)
-        else:
-            code_snippet = f"File {file_path} not found in repository."
 
         result = {
             "ruleId": alert["type"],
@@ -88,11 +68,7 @@ def convert_to_sarif(input_file, output_file, repo_path):
                 {
                     "physicalLocation": {
                         "artifactLocation": {"uri": alert.get("pkg_name", "unknown")},
-                        "region": {
-                            "startLine": line_number,
-                            "startColumn": 1,
-                            "snippet": {"text": code_snippet},
-                        },
+                        "region": {"startLine": 1},
                     }
                 }
             ],
@@ -102,7 +78,7 @@ def convert_to_sarif(input_file, output_file, repo_path):
         sarif_data["runs"][0]["results"].append(result)
 
     print(f"Writing SARIF data to {output_file}...")
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         json.dump(sarif_data, f, indent=2)
     print(f"SARIF file successfully written to {output_file}.")
 
