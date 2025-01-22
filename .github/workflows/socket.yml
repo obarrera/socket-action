@@ -24,7 +24,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensure full file structure is available
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -62,7 +62,7 @@ jobs:
             --committer "$GITHUB_ACTOR" \
             --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
             --target_path $GITHUB_WORKSPACE \
-            --force-scan > socket_results.json || {
+            --ignore-commit-files > socket_results.json || {
               echo "Socket CLI failed but data might still be available.";
             }
 
@@ -89,11 +89,8 @@ jobs:
           if [ -s socket_results.json ]; then
             echo "Using socket_results.json"
             RESULT_FILE="socket_results.json"
-          elif [ -s sbom.json ]; then
-            echo "Using sbom.json"
-            RESULT_FILE="sbom.json"
-          else:
-            echo "Error: Both socket_results.json and sbom.json are missing or empty."
+          else
+            echo "Error: socket_results.json is empty or missing."
             exit 1
           fi
           echo "RESULT_FILE=$RESULT_FILE" >> $GITHUB_ENV
