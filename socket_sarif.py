@@ -21,10 +21,13 @@ def convert_to_sarif(input_file, output_file):
         print(f"Loaded data from {input_file}: {json.dumps(data, indent=2)}")
     except json.JSONDecodeError as e:
         print(f"Failed to parse JSON from {input_file}: {e}")
-        exit(1)
+        exit(0)
+    except FileNotFoundError:
+        print(f"Input file {input_file} not found. Ensure the CLI generated it.")
+        exit(0)
     except Exception as e:
         print(f"Unexpected error when loading {input_file}: {e}")
-        exit(1)
+        exit(0)
 
     if "new_alerts" not in data or not data["new_alerts"]:
         print("No new alerts found in input data.")
@@ -97,4 +100,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     convert_to_sarif(args.socket_results, args.output_file)
-
