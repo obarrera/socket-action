@@ -19,12 +19,16 @@ def convert_to_sarif(input_file, output_file, repo_path):
     try:
         with open(input_file, 'r') as f:
             data = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Failed to load input file: {e}. Check if the file is empty or invalid JSON.")
+        exit(1)
     except Exception as e:
-        print(f"Failed to load input file: {e}")
+        print(f"Unexpected error reading input file: {e}")
         exit(1)
 
     if "new_alerts" not in data or not data["new_alerts"]:
         print("No alerts found in input file.")
+        print("Debugging full scan ID:", data.get("full_scan_id", "N/A"))
         exit(0)  # Exit gracefully without failing the pipeline.
 
     sarif_data = {
