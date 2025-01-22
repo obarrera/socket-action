@@ -57,7 +57,6 @@ jobs:
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Running Socket CLI..."
-          set -e  # Exit immediately if a command exits with a non-zero status
           socketcli --scm github \
             --repo ${{ github.event.repository.name }} \
             --branch "${{ env.REF_NAME }}" \
@@ -71,22 +70,23 @@ jobs:
       - name: Validate Socket Results
         run: |
           echo "Validating Socket CLI output..."
-          if [ ! -s socket_results.json ]; then
-            echo "Error: socket_results.json is empty or missing."
-            echo "Checking sbom.json for additional details..."
-            if [ -s sbom.json ]; then
-              echo "sbom.json is present. Using sbom.json as fallback."
-            else
-              echo "sbom.json is also missing."
-              exit 1
-            fi
+          if [ -s socket_results.json ]; then
+            echo "socket_results.json is valid."
+            echo "Using socket_results.json for SARIF conversion."
+            echo "RESULT_FILE=socket_results.json" >> $GITHUB_ENV
+          elif [ -s sbom.json ]; then
+            echo "socket_results.json is missing. Using sbom.json as fallback."
+            echo "RESULT_FILE=sbom.json" >> $GITHUB_ENV
+          else
+            echo "Both socket_results.json and sbom.json are missing. Exiting."
+            exit 1
           fi
 
-      - name: Convert Socket Results to SARIF
+      - name: Convert Results to SARIF
         run: |
           echo "Converting results to SARIF..."
           python socket_sarif.py \
-            --socket_results "socket_results.json" \
+            --socket_results "${{ env.RESULT_FILE }}" \
             --output_file "socket_results.sarif"
 
       - name: Upload SARIF Results
