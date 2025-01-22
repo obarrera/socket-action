@@ -1,6 +1,7 @@
 import json
 import argparse
 
+
 def map_severity_to_sarif(severity):
     severity_mapping = {
         "low": "note",
@@ -11,6 +12,7 @@ def map_severity_to_sarif(severity):
     }
     return severity_mapping.get(severity.lower(), "note")
 
+
 def convert_to_sarif(input_file, output_file):
     print(f"Loading results from {input_file}...")
     try:
@@ -20,9 +22,15 @@ def convert_to_sarif(input_file, output_file):
         print(f"Failed to load input file: {e}")
         exit(1)
 
-    print(f"Loaded data from {input_file}: {json.dumps(data, indent=2)}")
+    # Debug the raw data received
+    print(f"Debug: Raw CLI JSON data: {json.dumps(data, indent=2)}")
 
-    if "new_alerts" not in data or not data["new_alerts"]:
+    # Validate and ensure "new_alerts" exists
+    if "new_alerts" not in data:
+        print("Error: 'new_alerts' key is missing in the input data.")
+        exit(1)
+
+    if not data["new_alerts"]:
         print("No new alerts found in input data.")
         exit(0)
 
@@ -43,44 +51,59 @@ def convert_to_sarif(input_file, output_file):
         ],
     }
 
+    # Process each alert and debug individual alerts
     for alert in data.get("new_alerts", []):
-        # Debugging individual alerts
-        print(f"Processing alert: {json.dumps(alert, indent=2)}")
-        
-        rule = {
-            "id": alert.get("type", "unknown"),
-            "name": alert.get("title", "No Title Provided"),
-            "helpUri": "https://socket.dev",
-            "shortDescription": {"text": alert.get("description", "No description available.")},
-            "fullDescription": {"text": alert.get("props", {}).get("note", "No additional information provided.")},
-            "defaultConfiguration": {
-                "level": map_severity_to_sarif(alert.get("severity", "low"))
-            },
-        }
+        print(f"Debug: Processing alert: {json.dumps(alert, indent=2)}")
 
-        result = {
-            "ruleId": alert.get("type", "unknown"),
-            "message": {"text": alert.get("description", "No description available.")},
-            "locations": [
-                {
-                    "physicalLocation": {
-                        "artifactLocation": {"uri": alert.get("pkg_name", "unknown")},
-                        "region": {
-                            "startLine": 1,
-                            "startColumn": 1,
-                            "snippet": {"text": f"Package: {alert.get('pkg_name', 'unknown')}@{alert.get('pkg_version', 'unknown')}"}
-                        },
+        try:
+            rule = {
+                "id": alert.get("type", "unknown"),
+                "name": alert.get("title", "No Title Provided"),
+                "helpUri": "https://socket.dev",
+                "shortDescription": {
+                    "text": alert.get("description", "No description available.")
+                },
+                "fullDescription": {
+                    "text": alert.get("props", {}).get("note", "No additional information provided.")
+                },
+                "defaultConfiguration": {
+                    "level": map_severity_to_sarif(alert.get("severity", "low"))
+                },
+            }
+
+            result = {
+                "ruleId": alert.get("type", "unknown"),
+                "message": {
+                    "text": alert.get("description", "No description available.")
+                },
+                "locations": [
+                    {
+                        "physicalLocation": {
+                            "artifactLocation": {
+                                "uri": alert.get("pkg_name", "unknown"),
+                            },
+                            "region": {
+                                "startLine": 1,
+                                "startColumn": 1,
+                                "snippet": {
+                                    "text": f"Package: {alert.get('pkg_name', 'unknown')}@{alert.get('pkg_version', 'unknown')}"
+                                },
+                            },
+                        }
                     }
-                }
-            ],
-        }
+                ],
+            }
 
-        sarif_data["runs"][0]["tool"]["driver"]["rules"].append(rule)
-        sarif_data["runs"][0]["results"].append(result)
+            sarif_data["runs"][0]["tool"]["driver"]["rules"].append(rule)
+            sarif_data["runs"][0]["results"].append(result)
+        except Exception as e:
+            print(f"Error processing alert: {e}")
+            continue
 
-    # Debugging final SARIF structure
-    print(f"Final SARIF structure: {json.dumps(sarif_data, indent=2)}")
+    # Debug the final SARIF structure
+    print(f"Debug: Final SARIF structure: {json.dumps(sarif_data, indent=2)}")
 
+    # Write SARIF data to the output file
     print(f"Writing SARIF data to {output_file}...")
     try:
         with open(output_file, 'w') as f:
@@ -89,6 +112,7 @@ def convert_to_sarif(input_file, output_file):
     except Exception as e:
         print(f"Failed to write SARIF file: {e}")
         exit(1)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert Socket results to SARIF.")
