@@ -44,27 +44,31 @@ def convert_to_sarif(socket_results_path, output_file):
             ]
         }
 
-        # Process each new alert in the results
+        # Process alerts and avoid duplicate rules
+        processed_rules = set()
         for alert in socket_results.get('new_alerts', []):
-            rule_id = alert.get('type', 'unknown')
+            rule_id = alert.get('type', 'unknown') + "-" + alert.get('pkg_name')  # Unique rule ID per package
             description = alert.get('description', 'No description provided.')
             file_path = alert.get('manifests', 'unknown_file')
             severity = SEVERITY_MAP.get(alert.get('severity', 'info').lower(), 'note')
             alert_title = alert.get('title', 'Unknown issue')
             suggestion = alert.get('suggestion', 'No suggestion provided.')
+            full_description = alert.get('props', {}).get('note', '')
+
+            # Add unique rule if not already processed
+            if rule_id not in processed_rules:
+                sarif_data["runs"][0]["tool"]["driver"]["rules"].append({
+                    "id": rule_id,
+                    "name": alert_title,
+                    "shortDescription": {"text": description},
+                    "fullDescription": {"text": full_description},
+                    "defaultConfiguration": {"level": severity},
+                    "help": {"text": suggestion}
+                })
+                processed_rules.add(rule_id)
 
             # Debugging: Log each alert being processed
             print(f"Processing alert: {alert_title}, severity: {severity}, file: {file_path}")
-
-            # Add rule to SARIF
-            sarif_data["runs"][0]["tool"]["driver"]["rules"].append({
-                "id": rule_id,
-                "name": alert_title,
-                "shortDescription": {"text": description},
-                "fullDescription": {"text": alert.get('props', {}).get('note', '')},
-                "defaultConfiguration": {"level": severity},
-                "help": {"text": suggestion}
-            })
 
             # Add result to SARIF
             sarif_data["runs"][0]["results"].append({
@@ -87,7 +91,8 @@ def convert_to_sarif(socket_results_path, output_file):
                 "properties": {
                     "packageName": alert.get('pkg_name'),
                     "packageVersion": alert.get('pkg_version'),
-                    "packageUrl": alert.get('url')
+                    "packageUrl": alert.get('url'),
+                    "introducedBy": alert.get('introduced_by', [])
                 }
             })
 
