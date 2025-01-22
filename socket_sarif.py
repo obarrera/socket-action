@@ -35,6 +35,7 @@ def generate_sarif(socket_results, output_file):
         ]
     }
 
+    print("Processing alerts in Socket results...")
     for alert in socket_results.get("new_alerts", []):
         pkg_name = alert["pkg_name"]
         pkg_version = alert["pkg_version"]
@@ -42,6 +43,8 @@ def generate_sarif(socket_results, output_file):
         description = alert.get("description", "No description provided.")
         note = alert["props"].get("note", "No additional information available.")
         recommendation = alert.get("suggestion", "No recommendations provided.")
+
+        print(f"Adding alert for package {pkg_name}@{pkg_version} with severity {severity}.")
 
         sarif_data["runs"][0]["results"].append({
             "ruleId": alert["type"],
@@ -61,8 +64,10 @@ def generate_sarif(socket_results, output_file):
             ]
         })
 
+    print("Writing SARIF file...")
     with open(output_file, "w") as f:
         json.dump(sarif_data, f, indent=2)
+    print(f"SARIF file written successfully to {output_file}.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert Socket results to SARIF.")
@@ -71,10 +76,14 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    print("Loading Socket CLI results from", args.socket_results)
-    with open(args.socket_results, "r") as f:
-        socket_results = json.load(f)
+    print(f"Loading Socket CLI results from {args.socket_results}...")
+    try:
+        with open(args.socket_results, "r") as f:
+            socket_results = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Error: Failed to parse JSON file {args.socket_results}. {e}")
+        exit(1)
 
     print("Processing Socket CLI results...")
     generate_sarif(socket_results, args.output_file)
-    print(f"SARIF file successfully generated at {args.output_file}.")
+    print("SARIF generation completed.")
