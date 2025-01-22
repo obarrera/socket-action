@@ -24,7 +24,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensure full file history is available
+          fetch-depth: 0  # Ensure full file structure is available
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -61,9 +61,27 @@ jobs:
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
             --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
-            --target_path $GITHUB_WORKSPACE > socket_results.json || {
+            --target_path $GITHUB_WORKSPACE \
+            --force-scan > socket_results.json || {
               echo "Socket CLI failed but data might still be available.";
             }
+
+      - name: Debug Generated Files
+        run: |
+          echo "Checking for generated files..."
+          ls -l
+          if [ -f socket_results.json ]; then
+            echo "socket_results.json exists."
+            cat socket_results.json | head -n 20
+          else
+            echo "socket_results.json is missing."
+          fi
+          if [ -f sbom.json ]; then
+            echo "sbom.json exists."
+            cat sbom.json | head -n 20
+          else
+            echo "sbom.json is missing."
+          fi
 
       - name: Validate and Process Results
         run: |
@@ -74,7 +92,7 @@ jobs:
           elif [ -s sbom.json ]; then
             echo "Using sbom.json"
             RESULT_FILE="sbom.json"
-          else
+          else:
             echo "Error: Both socket_results.json and sbom.json are missing or empty."
             exit 1
           fi
@@ -86,6 +104,16 @@ jobs:
           python socket_sarif.py \
             --socket_results "${{ env.RESULT_FILE }}" \
             --output_file "socket_results.sarif"
+
+      - name: Debug SARIF File
+        run: |
+          echo "Previewing SARIF output..."
+          if [ -f socket_results.sarif ]; then
+            echo "socket_results.sarif exists."
+            cat socket_results.sarif | head -n 20
+          else
+            echo "socket_results.sarif is missing."
+          fi
 
       - name: Upload SARIF Results
         uses: github/codeql-action/upload-sarif@v3
