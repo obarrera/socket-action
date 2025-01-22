@@ -14,3 +14,4 @@ totalsegmentator==2.5.0
 nwebclient==1.0.305
 pydiscordhelper==1.1.2
 an-website==22.7.8
+justanotherpackage==0.1.6
