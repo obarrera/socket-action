@@ -8,13 +8,13 @@ on:
   pull_request:
     branches:
       - main
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   socket-security:
     permissions:
-      issues: write
       contents: read
-      pull-requests: write
       security-events: write
     runs-on: ubuntu-latest
 
@@ -30,60 +30,39 @@ jobs:
       - name: Install Dependencies
         run: pip install socketsecurity --upgrade
 
-      - name: Save Environment Variables
+      - name: Debug Repository Info
         run: |
-          echo "Saving environment variables..."
-          echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
-          echo "REF_NAME=${{ github.ref_name || 'unknown' }}" >> $GITHUB_ENV
-          echo "EVENT_ACTION=${{ github.event.action || 'unknown' }}" >> $GITHUB_ENV
-
-      - name: Debug Environment Variables
-        run: |
-          echo "Debugging environment variables:"
-          printenv | grep -E "PR_NUMBER|REF_NAME|EVENT_ACTION"
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "PR Number: ${{ github.event.pull_request.number || 0 }}"
+          echo "Commit Message: ${{ github.event.head_commit.message }}"
+        shell: bash
 
       - name: Run Socket CLI
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Running Socket CLI with debug mode enabled..."
+          echo "Running Socket CLI..."
           socketcli --scm github \
-            --repo ${{ github.event.repository.name }} \
-            --branch "${{ env.REF_NAME }}" \
-            --pr_number "${{ env.PR_NUMBER }}" \
+            --repo "${{ github.repository }}" \
+            --branch "${{ github.ref_name }}" \
+            --pr_number "${{ github.event.pull_request.number || 0 }}" \
             --enable-json \
             --sbom-file "sbom.json" \
-            --committer "$GITHUB_ACTOR" \
-            --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
-            --target_path $GITHUB_WORKSPACE \
-            --ignore-commit-files \
-            --disable-blocking \
-            --enable-debug || {
-              echo "Socket CLI failed but data might still be available.";
-            }
+            --target_path $GITHUB_WORKSPACE > socket_results.json || echo "Socket CLI failed."
 
-      - name: Validate CLI Output
+      - name: Debug CLI Output
         run: |
-          echo "Validating CLI output..."
-          if [ -s socket_results.json ]; then
-            echo "Using socket_results.json"
-            RESULT_FILE="socket_results.json"
-          elif [ -s sbom.json ]; then
-            echo "Using sbom.json"
-            RESULT_FILE="sbom.json"
-          else
-            echo "Error: Both socket_results.json and sbom.json are missing or empty."
-            exit 1
-          fi
-          echo "RESULT_FILE=$RESULT_FILE" >> $GITHUB_ENV
+          echo "CLI results in socket_results.json:"
+          cat socket_results.json || echo "socket_results.json is empty or missing."
 
       - name: Convert Results to SARIF
         run: |
-          echo "Converting results to SARIF..."
           python socket_sarif.py \
-            --socket_results "${{ env.RESULT_FILE }}" \
-            --output_file "socket_results.sarif"
+            --socket_results "socket_results.json" \
+            --output_file "socket_results.sarif" \
+            --repo_path $GITHUB_WORKSPACE
 
       - name: Upload SARIF Results
         uses: github/codeql-action/upload-sarif@v3
