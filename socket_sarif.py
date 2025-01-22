@@ -14,21 +14,33 @@ def map_severity_to_sarif(severity):
     return severity_mapping.get(severity.lower(), "note")
 
 
+def fetch_code_snippet(file_path, line_number, num_lines=3):
+    """Fetch code snippet around the given line number."""
+    try:
+        with open(file_path, 'r') as f:
+            lines = f.readlines()
+            start = max(0, line_number - 1)
+            end = min(len(lines), line_number - 1 + num_lines)
+            return ''.join(lines[start:end])
+    except Exception as e:
+        return f"Could not fetch snippet: {e}"
+
+
 def convert_to_sarif(input_file, output_file, repo_path):
     print(f"Loading results from {input_file}...")
     try:
         with open(input_file, 'r') as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
-        print(f"Failed to load input file: {e}. Check if the file is empty or invalid JSON.")
+        print(f"Failed to load input file: {e}. Ensure the file is valid JSON.")
         exit(1)
     except Exception as e:
         print(f"Unexpected error reading input file: {e}")
         exit(1)
 
-    if "new_alerts" not in data or not data["new_alerts"]:
-        print("No alerts found in input file.")
-        print("Debugging full scan ID:", data.get("full_scan_id", "N/A"))
+    if not data.get("new_alerts"):
+        print("No new alerts found in input file.")
+        print("Full scan ID:", data.get("full_scan_id", "N/A"))
         exit(0)  # Exit gracefully without failing the pipeline.
 
     sarif_data = {
@@ -61,26 +73,25 @@ def convert_to_sarif(input_file, output_file, repo_path):
             },
         }
 
-        # Resolve file path
-        file_path = alert.get("pkg_name", "unknown")
-        if not os.path.isabs(file_path):
-            file_path = os.path.join(repo_path, file_path)
+        file_path = os.path.join(repo_path, alert.get("pkg_name", "unknown"))
+        line_number = alert.get("line", 1)
 
-        if not os.path.exists(file_path):
-            print(f"Warning: File path {file_path} does not exist.")
-            file_path = alert.get("pkg_name", "unknown")
+        if os.path.exists(file_path):
+            code_snippet = fetch_code_snippet(file_path, line_number)
+        else:
+            code_snippet = f"File {file_path} not found in repository."
 
-        # Add result
         result = {
             "ruleId": alert["type"],
             "message": {"text": alert["description"]},
             "locations": [
                 {
                     "physicalLocation": {
-                        "artifactLocation": {"uri": file_path},
+                        "artifactLocation": {"uri": alert.get("pkg_name", "unknown")},
                         "region": {
-                            "startLine": alert.get("line", 1),
-                            "startColumn": alert.get("column", 1),
+                            "startLine": line_number,
+                            "startColumn": 1,
+                            "snippet": {"text": code_snippet},
                         },
                     }
                 }
