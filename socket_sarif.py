@@ -32,7 +32,7 @@ def convert_to_sarif(input_file, output_file):
 
     if "new_alerts" not in data or not data.get("new_alerts", []):
         print("No alerts found in input file.")
-        exit(1)
+        #exit(1)
 
     sarif_data = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
