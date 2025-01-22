@@ -1,5 +1,6 @@
 import json
 import argparse
+import time
 
 
 def map_severity_to_sarif(severity):
@@ -13,25 +14,32 @@ def map_severity_to_sarif(severity):
     return severity_mapping.get(severity.lower(), "note")
 
 
+def retry_load_json(file_path, retries=3, delay=5):
+    """Retry loading JSON file in case it is incomplete or not ready."""
+    for attempt in range(retries):
+        try:
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+                return data
+        except json.JSONDecodeError as e:
+            print(f"Attempt {attempt + 1}/{retries}: JSONDecodeError - {e}. Retrying in {delay} seconds...")
+            time.sleep(delay)
+        except FileNotFoundError:
+            print(f"Attempt {attempt + 1}/{retries}: File {file_path} not found. Retrying in {delay} seconds...")
+            time.sleep(delay)
+    print(f"Failed to load JSON file {file_path} after {retries} attempts.")
+    return None
+
+
 def convert_to_sarif(input_file, output_file):
     print(f"Loading results from {input_file}...")
-    try:
-        with open(input_file, 'r') as f:
-            data = json.load(f)
-        print(f"Loaded data from {input_file}: {json.dumps(data, indent=2)}")
-    except json.JSONDecodeError as e:
-        print(f"Failed to parse JSON from {input_file}: {e}")
-        exit(0)
-    except FileNotFoundError:
-        print(f"Input file {input_file} not found. Ensure the CLI generated it.")
-        exit(0)
-    except Exception as e:
-        print(f"Unexpected error when loading {input_file}: {e}")
+    data = retry_load_json(input_file)
+    if not data:
+        print(f"Error: Could not load or parse {input_file}. Exiting gracefully.")
         exit(0)
 
     if "new_alerts" not in data or not data["new_alerts"]:
         print("No new alerts found in input data.")
-        print("Ensure the CLI generated the expected output.")
         exit(0)
 
     sarif_data = {
