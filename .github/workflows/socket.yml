@@ -8,19 +8,14 @@ on:
   pull_request:
     branches:
       - main
-  issue_comment:
-  schedule:
-    - cron: '45 23 * * 5'
 
 jobs:
   socket-security:
     permissions:
-      issues: write
       contents: read
       pull-requests: write
       security-events: write
     runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'push' && format('refs/heads/{0}', github.event.repository.default_branch) == github.ref) || github.event_name == 'pull_request' || github.event_name == 'issue_comment' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -30,13 +25,13 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Dependencies
-        run: pip install socketsecurity --upgrade
-
       - name: Debug Environment Variables
         run: |
-          echo "Printing Environment Variables"
-          printenv
+          echo "Checking API key..."
+          if [ -z "${{ secrets.SOCKET_SECURITY_API_KEY }}" ]; then
+            echo "ERROR: SOCKET_SECURITY_API_KEY is missing."
+            exit 1
+          fi
 
       - name: Run Socket Scan
         env:
@@ -52,22 +47,24 @@ jobs:
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
             --commit_message "$COMMIT_MESSAGE" \
-            --target_path $GITHUB_WORKSPACE > socket_results.json || echo "Socket CLI failed"
+            --target_path $GITHUB_WORKSPACE > socket_results.json || {
+              echo "Socket CLI failed. Printing logs:"
+              cat socket_results.json || echo "socket_results.json not found."
+              exit 1
+            }
 
-      - name: Display Socket Results
+      - name: Debug Socket Results
         run: |
-          echo "Contents of socket_results.json:"
+          echo "Checking socket_results.json..."
+          if [ ! -s socket_results.json ]; then
+            echo "ERROR: socket_results.json is empty or missing."
+            exit 1
+          fi
           cat socket_results.json
 
       - name: Convert Socket Results to SARIF
         run: |
-          echo "Generating SARIF file..."
           python socket_sarif.py --socket_results "socket_results.json" --output_file "socket_results.sarif"
-
-      - name: Debug SARIF File
-        run: |
-          echo "Contents of socket_results.sarif:"
-          cat socket_results.sarif
 
       - name: Upload SARIF Results
         uses: github/codeql-action/upload-sarif@v3
