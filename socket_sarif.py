@@ -1,93 +1,97 @@
 import json
 import argparse
 
-def convert_to_sarif(socket_results_path, output_file):
+def map_severity_to_sarif(severity):
+    severity_mapping = {
+        "low": "note",
+        "medium": "warning",
+        "middle": "warning",
+        "high": "error",
+        "critical": "error",
+    }
+    return severity_mapping.get(severity.lower(), "note")
+
+def fetch_code_snippet(file_path, start_line, num_lines=3):
     try:
-        print(f"Loading Socket results from: {socket_results_path}")
-        with open(socket_results_path, 'r') as file:
-            socket_results = json.load(file)
-
-        print("Loaded Socket results:", json.dumps(socket_results, indent=2))
-
-        if not socket_results or 'new_alerts' not in socket_results:
-            raise ValueError("No new alerts found in Socket results.")
-
-        # Define severity mapping
-        severity_mapping = {
-            "critical": "error",
-            "high": "error",
-            "medium": "warning",
-            "low": "note"
-        }
-
-        sarif_data = {
-            "version": "2.1.0",
-            "runs": [
-                {
-                    "tool": {
-                        "driver": {
-                            "name": "Socket Security",
-                            "informationUri": "https://socket.dev",
-                            "rules": [],
-                        }
-                    },
-                    "results": []
-                }
-            ]
-        }
-
-        for alert in socket_results.get("new_alerts", []):
-            # Add rule information
-            rule = {
-                "id": alert["type"],
-                "name": alert["title"],
-                "shortDescription": {"text": alert["description"]},
-                "fullDescription": {"text": alert["props"].get("note", "")},
-                "defaultConfiguration": {"level": severity_mapping.get(alert["severity"], "note")},
-                "help": {"text": alert["suggestion"]}
-            }
-
-            # Add result information
-            result = {
-                "ruleId": alert["type"],
-                "message": {"text": alert["description"]},
-                "locations": [
-                    {
-                        "physicalLocation": {
-                            "artifactLocation": {"uri": alert["manifests"], "uriBaseId": "%SRCROOT%"},
-                            "region": {"startLine": 1, "startColumn": 1}
-                        }
-                    }
-                ],
-                "properties": {
-                    "packageName": alert["pkg_name"],
-                    "packageVersion": alert["pkg_version"],
-                    "packageUrl": alert["url"]
-                }
-            }
-
-            sarif_data["runs"][0]["tool"]["driver"]["rules"].append(rule)
-            sarif_data["runs"][0]["results"].append(result)
-
-        print("Generated SARIF data:", json.dumps(sarif_data, indent=2))
-
-        with open(output_file, 'w') as out_file:
-            json.dump(sarif_data, out_file, indent=2)
-
-        print(f"SARIF file successfully created at: {output_file}")
-
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON from {socket_results_path}: {e}")
-        raise
+        with open(file_path, 'r') as f:
+            lines = f.readlines()
+            return ''.join(lines[start_line - 1: start_line - 1 + num_lines])
     except Exception as e:
-        print(f"Error while converting to SARIF: {e}")
-        raise
+        return f"Could not fetch snippet: {e}"
 
+def convert_to_sarif(input_file, output_file):
+    print(f"Loading results from {input_file}...")
+    try:
+        with open(input_file, 'r') as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"Failed to load input file: {e}")
+        exit(1)
+
+    if "new_alerts" not in data:
+        print("No alerts found in input file.")
+        exit(1)
+
+    sarif_data = {
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "Socket Security",
+                        "informationUri": "https://socket.dev",
+                        "rules": [],
+                    }
+                },
+                "results": [],
+            }
+        ],
+    }
+
+    for alert in data.get("new_alerts", []):
+        rule = {
+            "id": alert["type"],
+            "name": alert["title"],
+            "helpUri": "https://socket.dev",
+            "shortDescription": {"text": alert["description"]},
+            "fullDescription": {"text": alert["props"]["note"]},
+            "defaultConfiguration": {
+                "level": map_severity_to_sarif(alert["severity"])
+            },
+        }
+
+        file_path = alert.get("pkg_name", "unknown")
+        start_line = 1  # Default to the first line if not provided
+
+        # Add a code snippet if the file exists
+        code_snippet = fetch_code_snippet(file_path, start_line)
+
+        result = {
+            "ruleId": alert["type"],
+            "message": {"text": alert["description"]},
+            "locations": [
+                {
+                    "physicalLocation": {
+                        "artifactLocation": {"uri": file_path},
+                        "region": {"startLine": start_line, "snippet": {"text": code_snippet}},
+                    }
+                }
+            ],
+        }
+
+        sarif_data["runs"][0]["tool"]["driver"]["rules"].append(rule)
+        sarif_data["runs"][0]["results"].append(result)
+
+    print(f"Writing SARIF data to {output_file}...")
+    with open(output_file, 'w') as f:
+        json.dump(sarif_data, f, indent=2)
+    print(f"SARIF file successfully written to {output_file}.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert Socket results to SARIF.")
-    parser.add_argument("--socket_results", required=True, help="Path to the Socket results JSON file.")
-    parser.add_argument("--output_file", required=True, help="Path to the output SARIF file.")
+    parser.add_argument("--socket_results", required=True, help="Input JSON results file.")
+    parser.add_argument("--output_file", required=True, help="Output SARIF file.")
     args = parser.parse_args()
 
     convert_to_sarif(args.socket_results, args.output_file)
