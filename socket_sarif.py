@@ -43,6 +43,8 @@ def convert_to_sarif(socket_results, output_file):
         severity = alert.get("severity", "low")
         package_name = alert.get("pkg_name", "unknown")
         package_version = alert.get("pkg_version", "unknown")
+        additional_note = alert.get("props", {}).get("note", "No additional information provided.")
+        suggestion = alert.get("suggestion", "No remediation steps provided.")
 
         # Add rule if it doesn't exist
         existing_rules = [rule["id"] for rule in sarif["runs"][0]["tool"]["driver"]["rules"]]
@@ -63,17 +65,36 @@ def convert_to_sarif(socket_results, output_file):
         sarif["runs"][0]["results"].append({
             "ruleId": rule_id,
             "message": {
-                "text": description
+                "text": f"{description}\n\nAdditional Information:\n{additional_note}\n\nSuggested Remediation:\n{suggestion}"
             },
             "locations": [
                 {
                     "physicalLocation": {
                         "artifactLocation": {
                             "uri": f"{package_name}@{package_version}"
+                        },
+                        "region": {
+                            "startLine": 1,
+                            "startColumn": 1
                         }
                     }
                 }
             ],
+            "relatedLocations": [
+                {
+                    "physicalLocation": {
+                        "artifactLocation": {
+                            "uri": f"https://socket.dev/pypi/package/{package_name}/overview/{package_version}"
+                        }
+                    },
+                    "message": {
+                        "text": f"View package details for {package_name}@{package_version}"
+                    }
+                }
+            ],
+            "partialFingerprints": {
+                "primaryLocationLineHash": alert.get("key", "unknown-key")
+            },
             "level": map_severity_to_sarif(severity)
         })
 
