@@ -21,7 +21,7 @@ def convert_to_sarif(socket_results_path, output_file):
         if os.stat(socket_results_path).st_size == 0:
             raise ValueError("Socket results file is empty.")
 
-        # Load the results from JSON
+        # Load results from JSON
         with open(socket_results_path, 'r') as file:
             socket_results = json.load(file)
 
