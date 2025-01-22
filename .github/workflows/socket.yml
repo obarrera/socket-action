@@ -33,32 +33,37 @@ jobs:
       - name: Install Dependencies
         run: pip install socketsecurity --upgrade
 
+      - name: Save Pull Request Number
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number || 0 }}
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+
       - name: Run Socket Scan
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          PR_NUMBER: ${{ env.PR_NUMBER }}
         run: |
           socketcli --scm github \
             --repo ${{ github.event.repository.name }} \
             --branch "${{ github.ref_name }}" \
-            --pr_number $(if [ -z $PR_NUMBER ]; then echo 0; else echo $PR_NUMBER;fi) \
+            --pr_number "$PR_NUMBER" \
             $(if [ ! -z $DEFAULT_BRANCH ]; then echo "--default_branch"; fi) \
             --enable-json \
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
-            --commit_message "$COMMIT_MESSAGE" \
+            --commit_message "${{ github.event.head_commit.message }}" \
             --target_path $GITHUB_WORKSPACE > socket_results.json
         continue-on-error: true
 
-      - name: Validate Output Files
+      - name: Validate Socket Results
         run: |
-          if [ ! -f socket_results.json ]; then
-            echo "Error: socket_results.json not found."
+          if [ ! -s socket_results.json ]; then
+            echo "Error: socket_results.json is empty or missing."
             exit 1
           fi
 
-      - name: Debug Socket Results
+      - name: Debug Socket CLI Logs
         run: cat socket_results.json || echo "socket_results.json is empty or missing."
 
       - name: Convert Socket Results to SARIF
