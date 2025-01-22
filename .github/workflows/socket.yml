@@ -61,6 +61,7 @@ jobs:
             --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
             --target_path $GITHUB_WORKSPACE > socket_results.json || {
               echo "Socket CLI failed but data might still be available.";
+              echo "CLI Error encountered. Exiting gracefully.";
             }
 
       - name: Validate and Process Results
