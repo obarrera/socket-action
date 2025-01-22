@@ -89,3 +89,8 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "socket_results.sarif"
+
+      - name: Debug SARIF Output
+        run: |
+          echo "Debugging SARIF output..."
+          cat socket_results.sarif
