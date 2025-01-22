@@ -14,3 +14,4 @@ TotalSegmentator==2.5.0
 ajpack==1.29.0
 django-handyhelpers==0.3.36
 pydiscordhelper==1.1.2
+nwebclient==1.0.305
