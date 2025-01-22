@@ -13,17 +13,22 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Install Socket CLI and Dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install socketsecurity
-          pip install requests
+          pip install socketsecurity requests
 
-      - name: Set Environment Variables
+      - name: Save Environment Variables
         run: |
           echo "Saving environment variables..."
-          echo "REF_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
+          echo "REF_NAME=${{ github.ref_name || 'unknown' }}" >> $GITHUB_ENV
+          echo "EVENT_ACTION=${{ github.event.action || 'unknown' }}" >> $GITHUB_ENV
+
+      - name: Debug Environment Variables
+        run: |
+          echo "Debugging environment variables:"
+          printenv | grep -E "PR_NUMBER|REF_NAME|EVENT_ACTION"
 
       - name: Run Socket CLI
         env:
@@ -45,10 +50,10 @@ jobs:
               echo "Socket CLI failed but data might still be available.";
             }
 
-      - name: Sleep for File Generation
+      - name: Delay for CLI Processing
         run: sleep 10
 
-      - name: Check File Existence
+      - name: Validate CLI Output
         run: |
           echo "Validating CLI output..."
           if [ -f "socket_results.json" ]; then
@@ -57,7 +62,6 @@ jobs:
           else
             echo "Error: socket_results.json is missing."
           fi
-
           if [ -f "sbom.json" ]; then
             echo "sbom.json found."
             cat sbom.json
@@ -65,15 +69,15 @@ jobs:
             echo "Error: sbom.json is missing."
           fi
 
-      - name: Convert Results to SARIF
+      - name: Parse Results to SARIF
         run: |
-          if [ -s socket_results.json ]; then
-            echo "Using socket_results.json"
+          if [ -s "socket_results.json" ]; then
+            echo "Converting socket_results.json to SARIF..."
             python socket_sarif.py \
               --socket_results "socket_results.json" \
               --output_file "socket_results.sarif"
-          elif [ -s sbom.json ]; then
-            echo "Using sbom.json"
+          elif [ -s "sbom.json" ]; then
+            echo "Converting sbom.json to SARIF..."
             python socket_sarif.py \
               --socket_results "sbom.json" \
               --output_file "socket_results.sarif"
