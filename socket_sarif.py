@@ -1,11 +1,27 @@
 import json
 import argparse
 
+# Severity mapping
+SEVERITY_MAP = {
+    "critical": "error",
+    "high": "error",
+    "medium": "warning",
+    "low": "note",
+    "info": "note"
+}
+
 def convert_to_sarif(socket_results_path, output_file):
     try:
-        # Load results from the socket results JSON
+        # Debugging: Log file path
+        print(f"Loading Socket results from: {socket_results_path}")
+
+        # Load results from the Socket results JSON
         with open(socket_results_path, 'r') as file:
             socket_results = json.load(file)
+
+        # Debugging: Log loaded JSON
+        print("Loaded Socket results:")
+        print(json.dumps(socket_results, indent=2))
 
         # Initialize SARIF template
         sarif_data = {
@@ -29,7 +45,10 @@ def convert_to_sarif(socket_results_path, output_file):
             rule_id = alert.get('rule_id', 'unknown')
             description = alert.get('description', 'No description provided.')
             file_path = alert.get('file', 'unknown_file')
-            severity = alert.get('severity', 'warning')
+            severity = SEVERITY_MAP.get(alert.get('severity', 'info').lower(), 'note')
+
+            # Debugging: Log each alert being processed
+            print(f"Processing alert: {rule_id}, severity: {severity}, file: {file_path}")
 
             # Add rule
             sarif_data["runs"][0]["tool"]["driver"]["rules"].append({
@@ -57,6 +76,10 @@ def convert_to_sarif(socket_results_path, output_file):
                     }
                 ]
             })
+
+        # Debugging: Log SARIF data before writing
+        print("Generated SARIF data:")
+        print(json.dumps(sarif_data, indent=2))
 
         # Write SARIF data to output file
         with open(output_file, 'w') as file:
