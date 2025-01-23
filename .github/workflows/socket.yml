@@ -15,7 +15,6 @@ on:
 jobs:
   socket-security:
     permissions:
-      # Needed for posting PR comments or security alerts, etc.
       issues: write
       contents: read
       pull-requests: write
@@ -39,7 +38,9 @@ jobs:
       - name: Save Environment Variables
         run: |
           echo "Saving environment variables..."
+          # Pull Request number, or 0 if not a PR
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
+          # Branch reference name
           echo "REF_NAME=${{ github.ref_name || 'unknown' }}" >> $GITHUB_ENV
           echo "EVENT_ACTION=${{ github.event.action || 'unknown' }}" >> $GITHUB_ENV
 
@@ -55,18 +56,18 @@ jobs:
         run: |
           echo "Running Socket CLI..."
           set -x
-          # IMPORTANT: Use `github.repository` for "owner/repo" format
+          # IMPORTANT: Pass only the short repo name, *not* "owner/repo"
           socketcli \
             --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
             --scm github \
-            --repo "${{ github.repository }}" \
+            --repo "socket-action" \
             --branch "${{ env.REF_NAME }}" \
             --pr_number "${{ env.PR_NUMBER }}" \
             --enable-json \
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
             --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
-            --target_path $GITHUB_WORKSPACE \
+            --target_path "$GITHUB_WORKSPACE" \
             --enable-debug \
             --default_branch \
             > socket_results.json || {
