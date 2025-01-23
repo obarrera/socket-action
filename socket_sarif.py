@@ -94,9 +94,9 @@ def convert_to_sarif(input_file, output_file, commit_hash):
         note_text = alert.get("props", {}).get("note", "")
 
         # Title and descriptions
-        title = f"Alert generated for {pkg_name}=={pkg_version} by Socket Security"
-        full_desc = f"{alert.get('title', '')} - {alert.get('description', '')}"
-        short_desc = f"{note_text}\n\nSuggested Action:\n{alert.get('suggestion', '')}"
+        short_desc = f"Alert generated for {pkg_name}=={pkg_version} by Socket Security"
+        full_desc = f"{note_text}\n\nSuggested Action:\n{alert.get('suggestion', '')}"
+        title = f"{alert.get('title', '')} - {alert.get('description', '')}"
 
         # Find the manifest file and line details
         introduced_list = alert.get("introduced_by", [])
@@ -112,7 +112,7 @@ def convert_to_sarif(input_file, output_file, commit_hash):
             rule_obj = {
                 "id": rule_id,
                 "name": f"{pkg_name}=={pkg_version}",  # Rule name should match the package
-                "shortDescription": {"text": short_desc},
+                "shortDescription": {"text": title},
                 "fullDescription": {"text": full_desc},
                 "helpUri": alert.get("url", "https://socket.dev"),
                 "defaultConfiguration": {"level": map_severity_to_sarif(severity)}
@@ -122,7 +122,7 @@ def convert_to_sarif(input_file, output_file, commit_hash):
         # Add the result
         result_obj = {
             "ruleId": rule_id,
-            "message": {"text": title},
+            "message": {"text": short_desc},
             "locations": [
                 {
                     "physicalLocation": {
