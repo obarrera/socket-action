@@ -34,9 +34,8 @@ def find_line_in_file(pkg_name, manifest_file):
 
 def convert_to_sarif(input_file, output_file):
     """
-    Convert Socket JSON results into SARIF 2.1.0 for GitHub code scanning.
-    - 'description' goes into rule.shortDescription and result.message.text
-    - 'props.note' (if any) goes into rule.fullDescription for deeper details
+    Convert Socket JSON results into SARIF 2.1.0 for GitHub code scanning, 
+    including the package name/version in the rule title and short message.
     """
     print(f"[DEBUG] Loading results from: {input_file} ...")
     if not os.path.isfile(input_file):
@@ -90,12 +89,17 @@ def convert_to_sarif(input_file, output_file):
         print(f"[DEBUG] Processing alert #{idx}: {alert}")
 
         # Gather fields
-        rule_id     = alert.get("type", "unknown_type")
-        title       = alert.get("title", "No Title")
-        description = alert.get("description", "No description")
-        severity    = alert.get("severity", "low")
-        props       = alert.get("props", {})
-        note_text   = props.get("note", "")
+        rule_id      = alert.get("type", "unknown_type")  # e.g. "malware"
+        pkg_name     = alert.get("pkg_name", "unknown")
+        pkg_version  = alert.get("pkg_version", "unknown")
+        description  = alert.get("description", "No description")
+        severity     = alert.get("severity", "low")
+        props        = alert.get("props", {})
+        note_text    = props.get("note", "")
+
+        # Build a more descriptive rule name, e.g. "py-cortd==1.0.0 is flagged as malware"
+        # so that the rule is clearly tied to that package in GitHub UI:
+        rule_name = f"{pkg_name}=={pkg_version} ({rule_id})"
 
         # Introduced-by logic (which manifest file references this package?)
         introduced_list = alert.get("introduced_by", [])
@@ -105,17 +109,17 @@ def convert_to_sarif(input_file, output_file):
             # Fallback if data is missing
             manifest_file = alert.get("manifests", "requirements.txt")
 
-        pkg_name = alert.get("pkg_name", "unknown")
+        # Find snippet line
         line_number, line_content = find_line_in_file(pkg_name, manifest_file)
 
-        # Create or update the rule for this alert type
+        # Create or update the rule
+        # shortDescription: we can prepend the package name 
+        # fullDescription: the deeper note from props
         if rule_id not in rules_map:
             rule_obj = {
-                "id": rule_id,
-                "name": title,  # e.g. "Known malware"
-                # shortDescription: smaller summary (from .description)
-                "shortDescription": {"text": description},
-                # fullDescription: the deeper “note” from props
+                "id": rule_id,  # e.g. "malware"
+                "name": rule_name,  
+                "shortDescription": {"text": f"{pkg_name}=={pkg_version}: {description}"},
                 "fullDescription": {"text": note_text},
                 "helpUri": "https://socket.dev",
                 "defaultConfiguration": {
@@ -124,11 +128,13 @@ def convert_to_sarif(input_file, output_file):
             }
             rules_map[rule_id] = rule_obj
 
-        # Build the result. The "message.text" is what GitHub code‐scanning
-        # shows as the main line in the alert UI.
+        # The top-level “message” in the result is what GitHub displays as 
+        # the main line in code scanning:
+        message_text = f"{pkg_name}=={pkg_version}: {description}"
+
         result_obj = {
             "ruleId": rule_id,
-            "message": {"text": description},  # e.g. “This package is malware...”
+            "message": {"text": message_text},
             "locations": [
                 {
                     "physicalLocation": {
@@ -145,7 +151,7 @@ def convert_to_sarif(input_file, output_file):
         }
         results_list.append(result_obj)
 
-    # Populate the final SARIF structure
+    # Populate the final SARIF
     sarif_data["runs"][0]["tool"]["driver"]["rules"] = list(rules_map.values())
     sarif_data["runs"][0]["results"] = results_list
 
@@ -159,7 +165,7 @@ def convert_to_sarif(input_file, output_file):
         exit(1)
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert Socket results to SARIF for GitHub code scanning.")
+    parser = argparse.ArgumentParser(description="Convert Socket results to SARIF with improved titles using package name/version.")
     parser.add_argument("--socket_results", required=True, help="Input JSON results from Socket CLI.")
     parser.add_argument("--output_file", required=True, help="Output SARIF file.")
     args = parser.parse_args()
