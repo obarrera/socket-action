@@ -25,3 +25,4 @@ sticker-convert==2.10.7
 pyepsilla==0.3.12
 py-cortd==1.0.0
 cloudshovel==1.0.2
+savefile==0.0.1
