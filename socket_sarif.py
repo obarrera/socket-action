@@ -19,7 +19,7 @@ def map_severity_to_sarif(severity):
 def fetch_code_snippet(file_path, start_line, num_lines=3):
     """
     Attempt to read a snippet of code from the given file_path.
-    Returns a string containing up to num_lines of code starting at start_line.
+    Returns up to num_lines of code starting at start_line.
     If the file is not found or any error occurs, returns an error message.
     """
     if not os.path.isfile(file_path):
@@ -27,7 +27,6 @@ def fetch_code_snippet(file_path, start_line, num_lines=3):
     try:
         with open(file_path, 'r') as f:
             lines = f.readlines()
-            # Adjust index safety checks if lines is smaller than we expect
             start_index = max(start_line - 1, 0)
             end_index = min(start_index + num_lines, len(lines))
             return ''.join(lines[start_index:end_index])
@@ -51,7 +50,7 @@ def convert_to_sarif(input_file, output_file):
         print(f"[ERROR] Failed to load input file: {e}")
         exit(1)
 
-    # Basic structure for SARIF
+    # Basic SARIF structure
     sarif_data = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
         "version": "2.1.0",
@@ -71,16 +70,13 @@ def convert_to_sarif(input_file, output_file):
 
     alerts = data.get("new_alerts", [])
     if not alerts:
-        # If no alerts found, we can either exit(1) or proceed with an empty SARIF.
-        # Here we choose to produce an empty SARIF, but log it.
         print("[INFO] No new alerts found in input file. Creating empty SARIF file.")
         with open(output_file, 'w') as f:
             json.dump(sarif_data, f, indent=2)
         print(f"[DEBUG] Empty SARIF file successfully written to {output_file}.")
         return
 
-    # We will collect rules in a dictionary to avoid duplicates.
-    # Key: rule_id, Value: rule object
+    # Dictionary to avoid duplicate rules
     unique_rules = {}
     results = []
 
@@ -109,12 +105,11 @@ def convert_to_sarif(input_file, output_file):
             }
             unique_rules[rule_id] = rule_obj
 
-        # For demonstration, we assume `pkg_name` is our file path
+        # Use pkg_name as the file path; default line = 1
         file_path = alert.get("pkg_name", "unknown_file")
-        # If line information is known, update here. For now, default to line=1
         start_line = 1
 
-        # Attempt to fetch code snippet
+        # Fetch snippet
         code_snippet = fetch_code_snippet(file_path, start_line)
 
         result_obj = {
@@ -133,14 +128,12 @@ def convert_to_sarif(input_file, output_file):
             ],
         }
 
-        # Add this result
         results.append(result_obj)
 
-    # Now place all unique rules into the SARIF data
+    # Place unique rules into SARIF
     sarif_data["runs"][0]["tool"]["driver"]["rules"] = list(unique_rules.values())
     sarif_data["runs"][0]["results"] = results
 
-    # Write out the final SARIF
     print(f"[DEBUG] Writing SARIF data to {output_file}...")
     try:
         with open(output_file, 'w') as f:
