@@ -11,13 +11,7 @@ on:
 
 jobs:
   socket-security:
-    permissions:
-      issues: write
-      contents: read
-      pull-requests: write
-      security-events: write
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -31,51 +25,49 @@ jobs:
         run: |
           echo "Installing/updating Socket Security CLI..."
           pip install --upgrade socketsecurity
-          # Optional: Check CLI version (should be 1.0.40 as of now)
           socketcli --version
 
       - name: Save Environment Variables
         run: |
-          echo "Extracting short repo name from GITHUB_REPOSITORY..."
-          # GITHUB_REPOSITORY is something like "owner/socket-action"
+          # Example: short repo name extraction
           REPO_NAME="$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)"
           echo "REPO_NAME=${REPO_NAME}" >> $GITHUB_ENV
-
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
           echo "REF_NAME=${{ github.ref_name || 'unknown' }}" >> $GITHUB_ENV
           echo "EVENT_ACTION=${{ github.event.action || 'unknown' }}" >> $GITHUB_ENV
 
       - name: Debug Environment Variables
         run: |
-          echo "Debugging environment variables (including REPO_NAME):"
+          echo "Debug environment variables:"
           printenv | grep -E "REPO_NAME|PR_NUMBER|REF_NAME|EVENT_ACTION"
 
-      - name: Run Socket Scan (JSON Only)
+      - name: Run Socket Scan
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
         run: |
-          echo "Running Socket CLI in minimal (JSON-only) mode..."
+          echo "Running Socket CLI with commit-sha and disable-blocking..."
           set -x
-          # We capture normal output to "socket_results.json" and errors (debug logs) to "socketcli_debug.log"
           socketcli \
             --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
             --repo "${{ env.REPO_NAME }}" \
             --branch "${{ env.REF_NAME }}" \
             --pr_number "${{ env.PR_NUMBER }}" \
+            --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
+            --commit-sha "${{ github.sha }}" \
+            --committer "$GITHUB_ACTOR" \
+            --target_path "$GITHUB_WORKSPACE" \
             --enable-json \
             --enable-debug \
-            --committer "$GITHUB_ACTOR" \
-            --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
-            --target_path "$GITHUB_WORKSPACE" \
+            --disable-blocking \
             > socket_results.json 2> socketcli_debug.log || {
-              echo "Socket CLI failed, but data might still be available...";
+              echo "Socket CLI failed but data might still be available.";
             }
 
-          echo "---- [DEBUG] Printing CLI debug logs (stderr) ----"
+          echo "---- [DEBUG] Printing CLI debug logs ----"
           cat socketcli_debug.log
           echo "---- [DEBUG] End of CLI debug logs ----"
 
-      - name: Validate JSON Results
+      - name: Validate and Process Results
         run: |
           echo "Checking if socket_results.json was created..."
           if [ -s socket_results.json ]; then
@@ -89,12 +81,11 @@ jobs:
 
       - name: Convert Results to SARIF
         run: |
-          echo "Converting Socket results to SARIF..."
           python socket_sarif.py \
             --socket_results "${{ env.RESULT_FILE }}" \
             --output_file "socket_results.sarif"
 
-      - name: Upload SARIF Report
+      - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "socket_results.sarif"
