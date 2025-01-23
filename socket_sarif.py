@@ -32,11 +32,16 @@ def find_line_in_file(pkg_name, manifest_file):
         return 1, f"[Error reading {manifest_file}: {e}]"
     return 1, f"[Package '{pkg_name}' not found in {manifest_file}]"
 
-def convert_to_sarif(input_file, output_file):
+def convert_to_sarif(input_file, output_file, commit_hash):
     """
-    Convert Socket JSON results into SARIF 2.1.0 for GitHub code scanning, with
-    the 'note' from Socket as the main message so the alert comment aligns with
-    the detailed malware info.
+    Convert Socket JSON results into SARIF 2.1.0 for GitHub code scanning.
+
+    - The rule "name" = "<pkg_name>==<pkg_version>"
+    - The rule "shortDescription" = "Refer to the alert message for detailed info."
+    - The main message (result.message.text) includes:
+        - The Socket note (props.note)
+        - The original alert description, e.g. "This package is malware..."
+        - The commit hash for reference
     """
     print(f"[DEBUG] Loading results from: {input_file} ...")
     if not os.path.isfile(input_file):
@@ -89,21 +94,26 @@ def convert_to_sarif(input_file, output_file):
     for idx, alert in enumerate(alerts, start=1):
         print(f"[DEBUG] Processing alert #{idx}: {alert}")
 
-        # Gather fields
-        rule_id      = alert.get("type", "unknown_type")  # e.g. "malware"
         pkg_name     = alert.get("pkg_name", "unknown")
         pkg_version  = alert.get("pkg_version", "unknown")
-        description  = alert.get("description", "No description")
+        rule_id      = alert.get("type", "unknown_type")  # e.g. "malware"
         severity     = alert.get("severity", "low")
-        props        = alert.get("props", {})
-        # The long malware details we want to appear as the main “comment”
-        note_text    = props.get("note", "[No detailed note found]")
+        note_text    = alert.get("props", {}).get("note", "[No detailed note found]")
+        description  = alert.get("description", "[No short description found]")
+        title        = alert.get("title", "No Title")
 
-        # For the rule name, include package info & the short “title”
-        # e.g. "pycordwd==1.0.0 - Known malware"
-        rule_name = f"{pkg_name}=={pkg_version} - {alert.get('title', 'Unknown')}"
+        # We want the rule name to just be "<pkg_name>==<pkg_version>" for clarity:
+        rule_name = f"{pkg_name}=={pkg_version}"
 
-        # Which manifest references this package?
+        # We'll move "This package is malware..." into the main message
+        # along with the note_text
+        combined_message = (
+            f"{note_text}\n\n"
+            f"{description}\n\n"
+            f"Commit: {commit_hash}"
+        ).strip()
+
+        # Determine which file references this package
         introduced_list = alert.get("introduced_by", [])
         if introduced_list and isinstance(introduced_list[0], list) and len(introduced_list[0]) > 1:
             manifest_file = introduced_list[0][1]
@@ -112,16 +122,20 @@ def convert_to_sarif(input_file, output_file):
 
         line_number, line_content = find_line_in_file(pkg_name, manifest_file)
 
-        # If we have not seen this rule before, create it
+        # Create or update the rule if we haven't seen this rule_id yet
         if rule_id not in rules_map:
-            # shortDescription is typically short; use the alert's "description"
-            # fullDescription can hold more info, or we can keep it simple
-            # but we'll rely on the “note” primarily in the result.message below.
             rule_obj = {
-                "id": rule_id,
-                "name": rule_name,
-                "shortDescription": {"text": description},
-                "fullDescription": {"text": "Refer to the alert message for detailed info."},
+                "id": rule_id,               # e.g. "malware"
+                "name": rule_name,           # e.g. "maling==2.2.1"
+                "shortDescription": {
+                    # Instead of "This package is malware...", 
+                    # we use a generic pointer to the main message
+                    "text": "Refer to the alert message for detailed info."
+                },
+                "fullDescription": {
+                    # Could remain minimal or include extra references
+                    "text": f"Alert Title: {title}"
+                },
                 "helpUri": "https://socket.dev",
                 "defaultConfiguration": {
                     "level": map_severity_to_sarif(severity)
@@ -129,19 +143,11 @@ def convert_to_sarif(input_file, output_file):
             }
             rules_map[rule_id] = rule_obj
 
-        # Put the note_text in the main “message” so it shows up in the big comment box
-        # (The short “description” is still stored in rule.shortDescription above.)
-        message_text = (
-            f"{note_text}\n\n"
-            f"({pkg_name}=={pkg_version})\n\n"
-            f"{description}"
-        ).strip()
-
+        # Build the SARIF result object
         result_obj = {
             "ruleId": rule_id,
-            # The top line in GitHub’s code‐scanning UI = message.text
-            # We combine the note, plus the package version, plus the short description
-            "message": {"text": message_text},
+            # The main message that appears in GitHub's code-scanning “comment”
+            "message": {"text": combined_message},
             "locations": [
                 {
                     "physicalLocation": {
@@ -171,12 +177,16 @@ def convert_to_sarif(input_file, output_file):
         exit(1)
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert Socket results to SARIF with the 'note' as the main message.")
+    parser = argparse.ArgumentParser(description="Convert Socket results to SARIF with a custom title and note alignment.")
     parser.add_argument("--socket_results", required=True, help="Input JSON results from Socket CLI.")
     parser.add_argument("--output_file", required=True, help="Output SARIF file.")
+    parser.add_argument("--commit_hash", default=None, help="Optional commit hash to include in the alert message.")
     args = parser.parse_args()
 
-    convert_to_sarif(args.socket_results, args.output_file)
+    # If commit_hash wasn't passed, try an environment variable fallback:
+    commit_hash = args.commit_hash or os.getenv("GITHUB_SHA", "N/A")
+
+    convert_to_sarif(args.socket_results, args.output_file, commit_hash)
 
 if __name__ == "__main__":
     main()
