@@ -12,3 +12,4 @@ pytest-timeout==1.4.2
 qg-toolkit==1.0.39
 totalsegmentator==2.5.0
 bytekafka-0-15==98.7
+vllm-npu==0.4.2
