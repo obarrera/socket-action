@@ -34,8 +34,9 @@ def find_line_in_file(pkg_name, manifest_file):
 
 def convert_to_sarif(input_file, output_file):
     """
-    Convert Socket JSON results into SARIF 2.1.0 for GitHub code scanning, 
-    including the package name/version in the rule title and short message.
+    Convert Socket JSON results into SARIF 2.1.0 for GitHub code scanning, with
+    the 'note' from Socket as the main message so the alert comment aligns with
+    the detailed malware info.
     """
     print(f"[DEBUG] Loading results from: {input_file} ...")
     if not os.path.isfile(input_file):
@@ -95,32 +96,32 @@ def convert_to_sarif(input_file, output_file):
         description  = alert.get("description", "No description")
         severity     = alert.get("severity", "low")
         props        = alert.get("props", {})
-        note_text    = props.get("note", "")
+        # The long malware details we want to appear as the main “comment”
+        note_text    = props.get("note", "[No detailed note found]")
 
-        # Build a more descriptive rule name, e.g. "py-cortd==1.0.0 is flagged as malware"
-        # so that the rule is clearly tied to that package in GitHub UI:
-        rule_name = f"{pkg_name}=={pkg_version} ({rule_id})"
+        # For the rule name, include package info & the short “title”
+        # e.g. "pycordwd==1.0.0 - Known malware"
+        rule_name = f"{pkg_name}=={pkg_version} - {alert.get('title', 'Unknown')}"
 
-        # Introduced-by logic (which manifest file references this package?)
+        # Which manifest references this package?
         introduced_list = alert.get("introduced_by", [])
         if introduced_list and isinstance(introduced_list[0], list) and len(introduced_list[0]) > 1:
             manifest_file = introduced_list[0][1]
         else:
-            # Fallback if data is missing
             manifest_file = alert.get("manifests", "requirements.txt")
 
-        # Find snippet line
         line_number, line_content = find_line_in_file(pkg_name, manifest_file)
 
-        # Create or update the rule
-        # shortDescription: we can prepend the package name 
-        # fullDescription: the deeper note from props
+        # If we have not seen this rule before, create it
         if rule_id not in rules_map:
+            # shortDescription is typically short; use the alert's "description"
+            # fullDescription can hold more info, or we can keep it simple
+            # but we'll rely on the “note” primarily in the result.message below.
             rule_obj = {
-                "id": rule_id,  # e.g. "malware"
-                "name": rule_name,  
-                "shortDescription": {"text": f"{pkg_name}=={pkg_version}: {description}"},
-                "fullDescription": {"text": note_text},
+                "id": rule_id,
+                "name": rule_name,
+                "shortDescription": {"text": description},
+                "fullDescription": {"text": "Refer to the alert message for detailed info."},
                 "helpUri": "https://socket.dev",
                 "defaultConfiguration": {
                     "level": map_severity_to_sarif(severity)
@@ -128,19 +129,23 @@ def convert_to_sarif(input_file, output_file):
             }
             rules_map[rule_id] = rule_obj
 
-        # The top-level “message” in the result is what GitHub displays as 
-        # the main line in code scanning:
-        message_text = f"{pkg_name}=={pkg_version}: {description}"
+        # Put the note_text in the main “message” so it shows up in the big comment box
+        # (The short “description” is still stored in rule.shortDescription above.)
+        message_text = (
+            f"{note_text}\n\n"
+            f"({pkg_name}=={pkg_version})\n\n"
+            f"{description}"
+        ).strip()
 
         result_obj = {
             "ruleId": rule_id,
+            # The top line in GitHub’s code‐scanning UI = message.text
+            # We combine the note, plus the package version, plus the short description
             "message": {"text": message_text},
             "locations": [
                 {
                     "physicalLocation": {
-                        "artifactLocation": {
-                            "uri": manifest_file
-                        },
+                        "artifactLocation": {"uri": manifest_file},
                         "region": {
                             "startLine": line_number,
                             "snippet": {"text": line_content}
@@ -149,6 +154,7 @@ def convert_to_sarif(input_file, output_file):
                 }
             ]
         }
+
         results_list.append(result_obj)
 
     # Populate the final SARIF
@@ -165,7 +171,7 @@ def convert_to_sarif(input_file, output_file):
         exit(1)
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert Socket results to SARIF with improved titles using package name/version.")
+    parser = argparse.ArgumentParser(description="Convert Socket results to SARIF with the 'note' as the main message.")
     parser.add_argument("--socket_results", required=True, help="Input JSON results from Socket CLI.")
     parser.add_argument("--output_file", required=True, help="Output SARIF file.")
     args = parser.parse_args()
