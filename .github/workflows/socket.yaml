@@ -36,7 +36,7 @@ jobs:
 
       - name: Save Environment Variables
         run: |
-          # For example, extracting short repo name
+          # Example of extracting short repo name
           echo "Extracting short repo name from GITHUB_REPOSITORY..."
           REPO_NAME="$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)"
           echo "REPO_NAME=${REPO_NAME}" >> $GITHUB_ENV
@@ -56,13 +56,14 @@ jobs:
         run: |
           echo "Running Socket CLI with commit-sha and disable-blocking..."
           set -x
+          # Separate stdout (JSON) and stderr (debug logs)
           socketcli \
             --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
             --repo "${{ env.REPO_NAME }}" \
             --branch "${{ env.REF_NAME }}" \
             --pr_number "${{ env.PR_NUMBER }}" \
             --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
-            --commit-sha "${{ github.sha }}" \  # <--- Correct argument name here
+            --commit-sha "${{ github.sha }}" \
             --committer "$GITHUB_ACTOR" \
             --target_path "$GITHUB_WORKSPACE" \
             --enable-json \
