@@ -15,3 +15,5 @@ bytekafka-0-15==98.7
 vllm-npu==0.4.2
 bagbag==0.75.9
 justanotherpackage==0.1.6
+browserstack-sdk==1.23.4
+zero123==9.6
