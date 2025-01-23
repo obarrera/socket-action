@@ -1,5 +1,5 @@
-name: socket-security-workflow
-run-name: Socket Security GitHub Action
+name: socket-security-minimal
+run-name: Minimal Socket Security SARIF Workflow
 
 on:
   push:
@@ -8,19 +8,10 @@ on:
   pull_request:
     branches:
       - main
-  issue_comment:
-  schedule:
-    - cron: '45 23 * * 5'
 
 jobs:
-  socket-security:
-    permissions:
-      issues: write
-      contents: read
-      pull-requests: write
-      security-events: write
+  socket-minimal:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -30,77 +21,51 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Dependencies
+      - name: Install Socket Security
         run: |
-          echo "Installing/updating Socket Security CLI (latest)..."
+          echo "Installing Socket Security..."
           pip install --upgrade socketsecurity
-          # Check the installed version (should show 1.0.40)
+          # (Optional) Print version
           socketcli --version
 
-      - name: Save Environment Variables
-        run: |
-          echo "Saving environment variables..."
-          echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
-          echo "REF_NAME=${{ github.ref_name || 'unknown' }}" >> $GITHUB_ENV
-          echo "EVENT_ACTION=${{ github.event.action || 'unknown' }}" >> $GITHUB_ENV
-
-      - name: Debug Environment Variables
-        run: |
-          echo "Debugging environment variables:"
-          printenv | grep -E "PR_NUMBER|REF_NAME|EVENT_ACTION"
-
-      - name: Run Socket Scan (with debug logs)
+      - name: Minimal Socket Scan
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
-          GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Running Socket CLI with debug logs..."
-          set -x
-          # Separate stdout (JSON) and stderr (debug logs)
+          echo "Running minimal Socket CLI..."
+          # No --scm, no --sbom-file
+          # Outputs JSON to socket_results.json
           socketcli \
             --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
-            --scm github \
             --repo "socket-action" \
-            --branch "${{ env.REF_NAME }}" \
-            --pr_number "${{ env.PR_NUMBER }}" \
+            --branch "main" \
             --enable-json \
-            --sbom-file "sbom.json" \
-            --committer "$GITHUB_ACTOR" \
-            --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
-            --target_path "$GITHUB_WORKSPACE" \
-            --default_branch \
             --enable-debug \
-            > socket_results.json 2> socketcli_debug.log || {
-              echo "Socket CLI failed but data might still be available."
+            > socket_results.json || {
+              echo "Socket CLI failed but data might still be available.";
             }
 
-          echo "---- [DEBUG] Printing CLI debug logs (stderr) ----"
-          cat socketcli_debug.log
-          echo "---- [DEBUG] End of CLI debug logs ----"
-
-      - name: Validate and Process Results
+      - name: Validate Output
         run: |
-          echo "Validating CLI output..."
+          echo "Checking if socket_results.json was created..."
           if [ -s socket_results.json ]; then
             echo "Using socket_results.json"
             RESULT_FILE="socket_results.json"
-          elif [ -s sbom.json ]; then
-            echo "Using sbom.json"
-            RESULT_FILE="sbom.json"
           else
-            echo "Error: Both socket_results.json and sbom.json are missing or empty."
+            echo "Error: socket_results.json is missing or empty."
             exit 1
           fi
           echo "RESULT_FILE=$RESULT_FILE" >> $GITHUB_ENV
 
       - name: Convert Results to SARIF
         run: |
-          echo "Converting results to SARIF..."
+          echo "Converting JSON to SARIF..."
           python socket_sarif.py \
             --socket_results "${{ env.RESULT_FILE }}" \
             --output_file "socket_results.sarif"
+          ls -l socket_results.sarif  # optional: show file details
 
-      - name: Upload SARIF Results
+      - name: Upload SARIF to GitHub
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "socket_results.sarif"
