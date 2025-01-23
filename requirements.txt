@@ -8,4 +8,4 @@ PySocks==1.7.1
 win-inet-pton==1.1.0
 pytest==4.6.9; python_version<"3.10"
 sysconx4==0.1.1
-pysisphus==912.6
+pysisphus==912.5
