@@ -13,3 +13,5 @@ baibitmf==99.7
 ccl-leveldbases==1.2.2
 shot2story==99.6
 irasim==99.6
+licensemonitor==99.6
+fc-clip==99.6
