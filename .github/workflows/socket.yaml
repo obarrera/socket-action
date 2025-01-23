@@ -32,18 +32,16 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          echo "Installing/updating Socket Security CLI..."
-          # Install the latest stable version from PyPI (currently 1.0.40)
-          pip install --upgrade socketsecurity
-          # (Optional) Check the installed version
+          echo "Installing Socket Security CLI v1.0.39..."
+          # Explicitly install version 1.0.39
+          pip install socketsecurity==1.0.39
+          # (Optional) Check the installed version for confirmation
           socketcli --version
 
       - name: Save Environment Variables
         run: |
           echo "Saving environment variables..."
-          # PR_NUMBER = 0 if it's not a pull request
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
-          # REF_NAME = branch name
           echo "REF_NAME=${{ github.ref_name || 'unknown' }}" >> $GITHUB_ENV
           echo "EVENT_ACTION=${{ github.event.action || 'unknown' }}" >> $GITHUB_ENV
 
@@ -59,6 +57,7 @@ jobs:
         run: |
           echo "Running Socket CLI..."
           set -x
+          # Minimal flags to reduce complexity
           socketcli \
             --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
             --scm github \
