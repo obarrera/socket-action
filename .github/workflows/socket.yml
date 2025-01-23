@@ -33,15 +33,17 @@ jobs:
       - name: Install Dependencies
         run: |
           echo "Installing/updating Socket Security CLI..."
-          # Install the newest version on PyPI (1.0.40 as of this writing)
+          # Install the latest stable version from PyPI (currently 1.0.40)
           pip install --upgrade socketsecurity
-          # (Optional) Check the version
+          # (Optional) Check the installed version
           socketcli --version
 
       - name: Save Environment Variables
         run: |
           echo "Saving environment variables..."
+          # PR_NUMBER = 0 if it's not a pull request
           echo "PR_NUMBER=${{ github.event.pull_request.number || 0 }}" >> $GITHUB_ENV
+          # REF_NAME = branch name
           echo "REF_NAME=${{ github.ref_name || 'unknown' }}" >> $GITHUB_ENV
           echo "EVENT_ACTION=${{ github.event.action || 'unknown' }}" >> $GITHUB_ENV
 
@@ -69,9 +71,6 @@ jobs:
             --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
             --target_path "$GITHUB_WORKSPACE" \
             --default_branch \
-            --disable-blocking \
-            --disable-security-issue \
-            --disable-overview \
             > socket_results.json || {
               echo "Socket CLI failed but data might still be available.";
             }
