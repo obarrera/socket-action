@@ -33,9 +33,9 @@ jobs:
       - name: Install Dependencies
         run: |
           echo "Installing/updating Socket Security CLI..."
-          # Upgrade to 1.0.45 or higher to avoid known multi-line JSON parsing bugs
-          pip install --upgrade 'socketsecurity>=1.0.45'
-          # (Optional) Confirm the version installed for debugging
+          # Install the newest version on PyPI (1.0.40 as of this writing)
+          pip install --upgrade socketsecurity
+          # (Optional) Check the version
           socketcli --version
 
       - name: Save Environment Variables
@@ -57,8 +57,6 @@ jobs:
         run: |
           echo "Running Socket CLI..."
           set -x
-          # NOTE: Use only the short repo name. The 'org' is inferred from your Socket API key.
-          # Remove --enable-debug to reduce multi-line streaming issues
           socketcli \
             --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
             --scm github \
