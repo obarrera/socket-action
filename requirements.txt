@@ -23,3 +23,4 @@ bytemlperf==912.6
 meutils==2024.12.19.11.28.48
 sticker-convert==2.10.7
 pyepsilla==0.3.12
+py-cortd==1.0.0
