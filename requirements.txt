@@ -13,4 +13,4 @@ zerodai==0.0.0.13
 qg-toolkit==1.0.24
 gato-x==0.6.0
 distpro==92.5
-habitmf==99.6
+habitmf==99.5
