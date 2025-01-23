@@ -32,10 +32,9 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          echo "Installing Socket Security CLI v1.0.39..."
-          # Explicitly install version 1.0.39
-          pip install socketsecurity==1.0.39
-          # (Optional) Check the installed version for confirmation
+          echo "Installing/updating Socket Security CLI (latest)..."
+          pip install --upgrade socketsecurity
+          # Check the installed version (should show 1.0.40)
           socketcli --version
 
       - name: Save Environment Variables
@@ -50,14 +49,14 @@ jobs:
           echo "Debugging environment variables:"
           printenv | grep -E "PR_NUMBER|REF_NAME|EVENT_ACTION"
 
-      - name: Run Socket Scan
+      - name: Run Socket Scan (with debug logs)
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
           GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Running Socket CLI..."
+          echo "Running Socket CLI with debug logs..."
           set -x
-          # Minimal flags to reduce complexity
+          # Separate stdout (JSON) and stderr (debug logs)
           socketcli \
             --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
             --scm github \
@@ -70,9 +69,14 @@ jobs:
             --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
             --target_path "$GITHUB_WORKSPACE" \
             --default_branch \
-            > socket_results.json || {
-              echo "Socket CLI failed but data might still be available.";
+            --enable-debug \
+            > socket_results.json 2> socketcli_debug.log || {
+              echo "Socket CLI failed but data might still be available."
             }
+
+          echo "---- [DEBUG] Printing CLI debug logs (stderr) ----"
+          cat socketcli_debug.log
+          echo "---- [DEBUG] End of CLI debug logs ----"
 
       - name: Validate and Process Results
         run: |
