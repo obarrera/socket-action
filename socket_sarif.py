@@ -96,7 +96,7 @@ def convert_to_sarif(input_file, output_file, commit_hash):
         # Title and descriptions
         title = f"Alert generated for {pkg_name}=={pkg_version} by Socket Security"
         full_desc = f"{alert.get('title', '')} - {alert.get('description', '')}"
-        short_desc = f"{note_text}\n\nSuggested Action:\n{alert.get('suggestion', '')}"
+        short_desc = f"{note_text}\r\n\r\nSuggested Action:\r\n{alert.get('suggestion', '')}"
 
         # Find the manifest file and line details
         introduced_list = alert.get("introduced_by", [])
