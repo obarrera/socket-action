@@ -15,28 +15,39 @@ def map_severity_to_sarif(severity):
     }
     return severity_mapping.get(severity.lower(), "note")
 
-
-def fetch_code_snippet(file_path, start_line, num_lines=3):
+def find_line_in_file(pkg_name, manifest_file):
     """
-    Attempt to read a snippet of code from file_path.
-    Returns up to num_lines or an error message if unavailable.
+    Search for 'pkg_name' in the lines of 'manifest_file'.
+    Return a (line_number, line_content) if found, else (1, 'Fallback snippet').
+    
+    This is used to generate a code snippet for the SARIF report, by anchoring
+    each alert to the line in the relevant manifest file.
     """
-    if not os.path.isfile(file_path):
-        return f"Could not fetch snippet: File '{file_path}' does not exist."
+    if not manifest_file or not os.path.isfile(manifest_file):
+        # If there's no manifest file, fallback to line 1
+        return 1, f"[No {manifest_file or 'manifest'} found in repo]"
     try:
-        with open(file_path, 'r') as f:
+        with open(manifest_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
-            start_index = max(start_line - 1, 0)
-            end_index = min(start_index + num_lines, len(lines))
-            return ''.join(lines[start_index:end_index])
+            for i, line in enumerate(lines, start=1):
+                # Basic check if pkg_name appears in that line
+                if pkg_name.lower() in line.lower():
+                    return i, line.rstrip("\n")
     except Exception as e:
-        return f"Could not fetch snippet: {e}"
+        return 1, f"[Error reading {manifest_file}: {e}]"
 
+    # If we never matched the package name, fallback
+    return 1, f"[Package '{pkg_name}' not found in {manifest_file}]"
 
 def convert_to_sarif(input_file, output_file):
     """
     Convert the Socket CLI JSON results into a SARIF 2.1.0 file.
-    Incorporates the 'props' note field into the final alert display.
+    
+    - For each alert in 'new_alerts':
+      - Determine the manifest file from 'introduced_by' if present
+      - Search that file for the package name to build a snippet
+      - Create/attach the appropriate SARIF 'rule' for that alert
+      - Create a SARIF 'result' referencing the discovered snippet
     """
     print(f"[DEBUG] Loading results from: {input_file} ...")
     if not os.path.isfile(input_file):
@@ -45,17 +56,17 @@ def convert_to_sarif(input_file, output_file):
 
     # Load the JSON
     try:
-        with open(input_file, 'r') as f:
+        with open(input_file, "r", encoding="utf-8") as f:
             data = json.load(f)
     except Exception as e:
-        print(f"[ERROR] Failed to load input file: {e}")
+        print(f"[ERROR] Failed to parse JSON from '{input_file}': {e}")
         exit(1)
 
-    # For debugging: print the entire JSON
+    # Debug: print entire JSON for transparency
     print("[DEBUG] Full JSON content from Socket results:")
     print(json.dumps(data, indent=2))
 
-    # Basic SARIF structure
+    # Basic SARIF skeleton
     sarif_data = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
         "version": "2.1.0",
@@ -73,94 +84,106 @@ def convert_to_sarif(input_file, output_file):
         ]
     }
 
-    # If "new_alerts" doesn't exist or is empty, produce an empty SARIF
     alerts = data.get("new_alerts", [])
+    print(f"[DEBUG] Found {len(alerts)} 'new_alerts' in the data.")
+
     if not alerts:
-        print("[INFO] No new alerts found. Creating empty SARIF file.")
-        with open(output_file, 'w') as f:
-            json.dump(sarif_data, f, indent=2)
-        print(f"[DEBUG] Empty SARIF file successfully written to {output_file}.")
+        print("[INFO] 'new_alerts' is empty or missing. Creating empty SARIF.")
+        with open(output_file, "w", encoding="utf-8") as out:
+            json.dump(sarif_data, out, indent=2)
+        print(f"[DEBUG] Wrote empty SARIF to '{output_file}'.")
         return
 
-    print(f"[DEBUG] Found {len(alerts)} 'new_alerts' in the data.")
-    unique_rules = {}
-    results = []
+    # We'll store each unique rule in a dict
+    rules_map = {}
+    results_list = []
 
     for idx, alert in enumerate(alerts, start=1):
         print(f"[DEBUG] Processing alert #{idx}: {alert}")
 
-        # Basic fields
-        rule_id = alert.get("type", "unknown_type")
-        title = alert.get("title", "No Title Provided")
-        description = alert.get("description", "No Description Provided")
-        severity = alert.get("severity", "low")
+        rule_id     = alert.get("type", "unknown_type")
+        title       = alert.get("title", "No Title")
+        description = alert.get("description", "No description")
+        severity    = alert.get("severity", "low")
+        props       = alert.get("props", {})
 
-        props = alert.get("props", {})
-        # Grab that custom 'note' text so it shows up in the final Code Scanning UI
-        note_text = props.get("note", "No additional note provided.")
+        # Additional note from props to place in fullDescription
+        note_text = props.get("note", "No additional context.")
 
-        # Build a more complete message that merges the top-level description + the note
-        combined_message = f"{description}\n\nDetails:\n{note_text}"
-
-        # Create or reuse a rule object for SARIF "rules"
-        if rule_id not in unique_rules:
+        # In SARIF, each distinct rule should appear once under 'driver.rules'
+        if rule_id not in rules_map:
             rule_obj = {
                 "id": rule_id,
                 "name": title,
-                "helpUri": "https://socket.dev",
+                # shortDescription is typically a single line or short text
                 "shortDescription": {"text": description},
-                # Put the note in the 'fullDescription' so you can expand in the UI
+                # fullDescription can hold more detailed explanation/notes
                 "fullDescription": {"text": note_text},
+                "helpUri": "https://socket.dev",
                 "defaultConfiguration": {
                     "level": map_severity_to_sarif(severity)
-                },
+                }
             }
-            unique_rules[rule_id] = rule_obj
+            rules_map[rule_id] = rule_obj
 
-        # We’ll treat the pkg_name as if it’s the file or fallback to "unknown_file"
-        file_path = alert.get("pkg_name", "unknown_file")
-        start_line = 1
-        code_snippet = fetch_code_snippet(file_path, start_line)
+        # The "pkg_name" is the suspicious/malicious package
+        pkg_name = alert.get("pkg_name", "unknown")
 
-        # Build a single SARIF result
+        # Determine which manifest file we should reference
+        # Typically introduced_by is an array of arrays: [["direct", "requirements.txt"], ...]
+        # We'll pick the first entry if it exists
+        introduced_list = alert.get("introduced_by", [])
+        if introduced_list and isinstance(introduced_list[0], list) and len(introduced_list[0]) > 1:
+            manifest_file = introduced_list[0][1]
+        else:
+            # If we can't parse introduced_by, fallback to "requirements.txt" or a placeholder
+            manifest_file = alert.get("manifests", "requirements.txt")
+
+        # Look up the line number & snippet from that manifest file
+        line_number, line_content = find_line_in_file(pkg_name, manifest_file)
+
+        # Build a SARIF result object referencing this snippet
         result_obj = {
             "ruleId": rule_id,
-            "message": {
-                # Show both the short description and the note in the final alert text:
-                "text": combined_message
-            },
+            # message.text is typically a short summary of the reason for the alert
+            "message": {"text": description},
             "locations": [
                 {
                     "physicalLocation": {
-                        "artifactLocation": {"uri": file_path},
-                        "region": {
-                            "startLine": start_line,
-                            "snippet": {"text": code_snippet}
+                        "artifactLocation": {
+                            "uri": manifest_file
                         },
+                        "region": {
+                            "startLine": line_number,
+                            "snippet": {"text": line_content}
+                        }
                     }
                 }
-            ],
+            ]
         }
-        results.append(result_obj)
 
-    # Fill out the final SARIF data
-    sarif_data["runs"][0]["tool"]["driver"]["rules"] = list(unique_rules.values())
-    sarif_data["runs"][0]["results"] = results
+        results_list.append(result_obj)
 
-    print(f"[DEBUG] Writing SARIF with {len(results)} results to '{output_file}'...")
+    # Populate the SARIF structure
+    sarif_data["runs"][0]["tool"]["driver"]["rules"] = list(rules_map.values())
+    sarif_data["runs"][0]["results"] = results_list
+
+    print(f"[DEBUG] Writing SARIF with {len(results_list)} results to '{output_file}'...")
     try:
-        with open(output_file, 'w') as f:
-            json.dump(sarif_data, f, indent=2)
+        with open(output_file, "w", encoding="utf-8") as out:
+            json.dump(sarif_data, out, indent=2)
         print(f"[INFO] SARIF file successfully written to '{output_file}'.")
     except Exception as e:
-        print(f"[ERROR] Failed to write SARIF file: {e}")
+        print(f"[ERROR] Failed writing SARIF to '{output_file}': {e}")
         exit(1)
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Convert Socket results to SARIF.")
-    parser.add_argument("--socket_results", required=True, help="Input JSON results file.")
+def main():
+    parser = argparse.ArgumentParser(description="Convert Socket results to SARIF with lines referencing the correct manifest file.")
+    parser.add_argument("--socket_results", required=True, help="Input JSON results from Socket CLI.")
     parser.add_argument("--output_file", required=True, help="Output SARIF file.")
     args = parser.parse_args()
 
     convert_to_sarif(args.socket_results, args.output_file)
+
+if __name__ == "__main__":
+    main()
