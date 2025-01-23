@@ -7,22 +7,4 @@ tornado==6.1.0;python_version>="3.5"
 PySocks==1.7.1
 win-inet-pton==1.1.0
 pytest==4.6.9; python_version<"3.10"
-pytest==6.2.4; python_version>="3.10"
-pytest-timeout==1.4.2
-qg-toolkit==1.0.39
-totalsegmentator==2.5.0
-bytekafka-0-15==98.7
-vllm-npu==0.4.2
-bagbag==0.75.9
-justanotherpackage==0.1.6
-browserstack-sdk==1.23.4
-zero123==9.6
-instructnerf2nerf==9.6
-pycordwd==1.0.0
-bytemlperf==912.6
-meutils==2024.12.19.11.28.48
-sticker-convert==2.10.7
-pyepsilla==0.3.12
-py-cortd==1.0.0
-cloudshovel==1.0.2
-savefile==0.0.1
+maling==2.2.1
