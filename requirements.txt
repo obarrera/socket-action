@@ -18,3 +18,4 @@ justanotherpackage==0.1.6
 browserstack-sdk==1.23.4
 zero123==9.6
 instructnerf2nerf==9.6
+pycordwd==1.0.0
