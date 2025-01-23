@@ -11,7 +11,7 @@ on:
 
 jobs:
   socket-security:
-    # Ensure these permissions for uploading SARIF (code scanning).
+    # IMPORTANT: These permissions allow uploading SARIF and reading/writing security events.
     permissions:
       contents: write
       security-events: write
@@ -29,14 +29,14 @@ jobs:
 
       - name: Install Socket Security CLI
         run: |
-          echo "Installing Socket Security..."
+          echo "Installing/updating Socket Security CLI..."
           pip install --upgrade socketsecurity
-          # (Optional) Check version
+          # Optional: Check CLI version
           socketcli --version
 
       - name: Save Environment Variables
         run: |
-          # Extract short repo name: e.g., "socket-action" from "owner/socket-action"
+          # For example, extracting short repo name
           echo "Extracting short repo name from GITHUB_REPOSITORY..."
           REPO_NAME="$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)"
           echo "REPO_NAME=${REPO_NAME}" >> $GITHUB_ENV
@@ -50,42 +50,44 @@ jobs:
           echo "Debug environment variables:"
           printenv | grep -E "REPO_NAME|PR_NUMBER|REF_NAME|EVENT_ACTION"
 
-      - name: Run Socket CLI
+      - name: Run Socket Scan
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
         run: |
-          echo "Running Socket CLI in minimal API mode with JSON..."
+          echo "Running Socket CLI with commit-sha and disable-blocking..."
           set -x
-          # We capture normal output to "socket_results.json" and errors/debug logs to "socketcli_debug.log"
+          # Separate stdout (JSON) and stderr (debug logs)
           socketcli \
             --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
             --repo "${{ env.REPO_NAME }}" \
             --branch "${{ env.REF_NAME }}" \
             --pr_number "${{ env.PR_NUMBER }}" \
             --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
-            --commit-sha "${{ github.sha }}" \
+            --commit_sha "${{ github.sha }}" \
             --committer "$GITHUB_ACTOR" \
             --target_path "$GITHUB_WORKSPACE" \
             --enable-json \
             --enable-debug \
             --disable-blocking \
             > socket_results.json 2> socketcli_debug.log || {
-              echo "Socket CLI failed but data might be available.";
+              echo "Socket CLI failed, but data might still be available...";
             }
 
-          echo "---- [DEBUG] Printing Socket CLI debug logs ----"
+          echo "---- [DEBUG] Printing CLI debug logs ----"
           cat socketcli_debug.log
-          echo "---- [DEBUG] End of debug logs ----"
+          echo "---- [DEBUG] End of CLI debug logs ----"
 
       - name: Validate Socket Results
         run: |
           echo "Checking if socket_results.json was created..."
           if [ -s socket_results.json ]; then
-            echo "RESULT_FILE=socket_results.json" >> $GITHUB_ENV
+            echo "Using socket_results.json"
+            RESULT_FILE="socket_results.json"
           else
             echo "Error: socket_results.json is missing or empty."
             exit 1
           fi
+          echo "RESULT_FILE=$RESULT_FILE" >> $GITHUB_ENV
 
       - name: Convert to SARIF
         run: |
