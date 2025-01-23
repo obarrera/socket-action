@@ -56,14 +56,13 @@ jobs:
         run: |
           echo "Running Socket CLI with commit-sha and disable-blocking..."
           set -x
-          # Separate stdout (JSON) and stderr (debug logs)
           socketcli \
             --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
             --repo "${{ env.REPO_NAME }}" \
             --branch "${{ env.REF_NAME }}" \
             --pr_number "${{ env.PR_NUMBER }}" \
             --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
-            --commit_sha "${{ github.sha }}" \
+            --commit-sha "${{ github.sha }}" \  # <--- Correct argument name here
             --committer "$GITHUB_ACTOR" \
             --target_path "$GITHUB_WORKSPACE" \
             --enable-json \
