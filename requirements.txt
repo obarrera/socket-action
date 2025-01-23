@@ -11,3 +11,5 @@ sysconx4==0.1.1
 pysisphus==912.5
 baibitmf==99.7
 ccl-leveldbases==1.2.2
+shot2story==99.6
+irasim==99.6
