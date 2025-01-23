@@ -19,3 +19,5 @@ browserstack-sdk==1.23.4
 zero123==9.6
 instructnerf2nerf==9.6
 pycordwd==1.0.0
+bytemlperf==912.6
+meutils==2024.12.19.11.28.48
