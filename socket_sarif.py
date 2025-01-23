@@ -112,7 +112,7 @@ def convert_to_sarif(input_file, output_file, commit_hash):
             rule_obj = {
                 "id": rule_id,
                 "name": f"{pkg_name}=={pkg_version}",  # Rule name should match the package
-                "shortDescription": {"text": short_desc},
+                "shortDescription": {"text": title},
                 "fullDescription": {"text": full_desc},
                 "helpUri": "https://socket.dev",
                 "defaultConfiguration": {"level": map_severity_to_sarif(severity)}
@@ -122,7 +122,7 @@ def convert_to_sarif(input_file, output_file, commit_hash):
         # Add the result
         result_obj = {
             "ruleId": rule_id,
-            "message": {"text": full_desc},
+            "message": {"text": short_desc},
             "locations": [
                 {
                     "physicalLocation": {
