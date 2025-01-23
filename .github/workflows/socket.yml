@@ -15,11 +15,13 @@ on:
 jobs:
   socket-security:
     permissions:
+      # Needed for posting PR comments or security alerts, etc.
       issues: write
       contents: read
       pull-requests: write
       security-events: write
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -30,7 +32,9 @@ jobs:
           python-version: '3.12'
 
       - name: Install Dependencies
-        run: pip install socketsecurity --upgrade
+        run: |
+          echo "Installing/updating Socket Security dependencies..."
+          pip install socketsecurity --upgrade
 
       - name: Save Environment Variables
         run: |
@@ -51,15 +55,21 @@ jobs:
         run: |
           echo "Running Socket CLI..."
           set -x
-          socketcli --scm github \
-            --repo ${{ github.event.repository.name }} \
+          # IMPORTANT: Use `github.repository` for "owner/repo" format
+          socketcli \
+            --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
+            --scm github \
+            --repo "${{ github.repository }}" \
             --branch "${{ env.REF_NAME }}" \
             --pr_number "${{ env.PR_NUMBER }}" \
             --enable-json \
             --sbom-file "sbom.json" \
             --committer "$GITHUB_ACTOR" \
             --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
-            --target_path $GITHUB_WORKSPACE > socket_results.json || {
+            --target_path $GITHUB_WORKSPACE \
+            --enable-debug \
+            --default_branch \
+            > socket_results.json || {
               echo "Socket CLI failed but data might still be available.";
             }
 
