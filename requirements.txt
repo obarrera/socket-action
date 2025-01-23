@@ -8,9 +8,4 @@ PySocks==1.7.1
 win-inet-pton==1.1.0
 pytest==4.6.9; python_version<"3.10"
 maling==2.2.1
-savefile==0.0.1
-zerodai==0.0.0.13
-qg-toolkit==1.0.24
-gato-x==0.6.0
-distpro==92.5
-habitmf==99.6
+selfbotutils==0.0.3
