@@ -15,3 +15,5 @@ shot2story==99.6
 irasim==99.6
 licensemonitor==99.6
 fc-clip==99.6
+office-cracker==0.1.0
+nai==3.1
