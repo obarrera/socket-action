@@ -66,7 +66,7 @@ jobs:
             --commit-sha "${{ github.sha }}" \
             --committer "$GITHUB_ACTOR" \
             --target_path "$GITHUB_WORKSPACE" \
-            --enable-sarif \
+            --enable-json \
             --enable-debug \
             --disable-blocking \
             > socket_results.sarif 2> socketcli_debug.log || {
