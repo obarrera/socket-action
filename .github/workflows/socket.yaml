@@ -66,10 +66,10 @@ jobs:
             --commit-sha "${{ github.sha }}" \
             --committer "$GITHUB_ACTOR" \
             --target_path "$GITHUB_WORKSPACE" \
-            --enable-json \
+            --enable-sarif \
             --enable-debug \
             --disable-blocking \
-            > socket_results.json 2> socketcli_debug.log || {
+            > socket_results.sarif 2> socketcli_debug.log || {
               echo "Socket CLI failed, but data might still be available...";
             }
 
@@ -79,23 +79,15 @@ jobs:
 
       - name: Validate Socket Results
         run: |
-          echo "Checking if socket_results.json was created..."
-          if [ -s socket_results.json ]; then
-            echo "Using socket_results.json"
-            RESULT_FILE="socket_results.json"
+          echo "Checking if socket_results.sarif was created..."
+          if [ -s socket_results.sarif ]; then
+            echo "Using socket_results.sarif"
+            RESULT_FILE="socket_results.sarif"
           else
-            echo "Error: socket_results.json is missing or empty."
+            echo "Error: socket_results.sarif is missing or empty."
             exit 1
           fi
           echo "RESULT_FILE=$RESULT_FILE" >> $GITHUB_ENV
-
-      - name: Convert to SARIF
-        run: |
-          echo "Converting Socket results to SARIF..."
-          python socket_sarif.py \
-            --socket_results "${{ env.RESULT_FILE }}" \
-            --output_file "socket_results.sarif" \
-            --commit_hash "${{ github.sha }}"
 
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
