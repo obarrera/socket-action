@@ -27,6 +27,16 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Upgrade pip and setuptools
+        run: |
+          echo "Upgrading pip and setuptools..."
+          pip install --upgrade pip setuptools
+      
+      - name: Install Socket SDK
+        run: |
+          echo "Installing Socket SDK..."
+          pip install -i https://test.pypi.org/simple/ "socket-sdk-python<2.0.0,>=1.0.15"
+
       - name: Install Socket Security CLI
         run: |
           echo "Installing/updating Socket Security CLI..."
