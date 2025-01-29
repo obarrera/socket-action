@@ -33,9 +33,7 @@ jobs:
           #pip install --upgrade socketsecurity
           # Optional: Check CLI version
           #socketcli --version
-          # Upgrade setuptools first using the main PyPI index
-          pip install --upgrade setuptools
-          pip install -i https://test.pypi.org/simple/ --no-build-isolation socketsecurity==1.0.43.dev451
+          pip install -i https://test.pypi.org/simple/ socketsecurity==1.0.42.dev441
 
       - name: Save Environment Variables
         run: |
