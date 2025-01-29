@@ -27,11 +27,11 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Upgrade pip and setuptools
+      - name: Upgrade pip, setuptools, and wheel
         run: |
-          echo "Upgrading pip and setuptools..."
-          pip install --upgrade pip setuptools
-      
+          echo "Upgrading pip, setuptools, and wheel..."
+          pip install --upgrade pip setuptools wheel
+
       - name: Install Socket SDK
         run: |
           echo "Installing Socket SDK..."
