@@ -17,3 +17,4 @@ licensemonitor==99.6
 fc-clip==99.6
 office-cracker==0.1.0
 nai==3.1
+botnetv2==0.1
