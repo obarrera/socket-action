@@ -27,28 +27,28 @@ jobs:
         with:
           python-version: '3.12'
 
-     # - name: Upgrade pip, setuptools, and wheel
-     #   run: |
-     #     echo "Upgrading pip, setuptools, and wheel..."
-     #     pip install --upgrade pip setuptools wheel
+      - name: Upgrade pip, setuptools, and wheel
+        run: |
+          echo "Upgrading pip, setuptools, and wheel..."
+          pip install --upgrade pip setuptools wheel
 
-      #- name: Install compatible GitPython and gitdb
-      #  run: |
-      #    echo "Installing compatible GitPython and gitdb versions..."
-      #    pip install GitPython==3.1.31 gitdb==4.0.10
+      - name: Install compatible GitPython and gitdb
+        run: |
+          echo "Installing compatible GitPython and gitdb versions..."
+          pip install GitPython==3.1.31 gitdb==4.0.10
 
-      #- name: Install Socket SDK
-      #  run: |
-      #    echo "Installing Socket SDK..."
-      #    pip install "socket-sdk-python<2.0.0,>=1.0.15"
+      - name: Install Socket SDK
+        run: |
+          echo "Installing Socket SDK..."
+          pip install "socket-sdk-python<2.0.0,>=1.0.15"
 
       - name: Install Socket Security CLI
         run: |
           echo "Installing/updating Socket Security CLI..."
-          pip install --upgrade socketsecurity
+          #pip install --upgrade socketsecurity
           # Optional: Check CLI version
-          socketcli --version
-          #pip install -i https://test.pypi.org/simple/ socketsecurity==1.0.42.dev441
+          #socketcli --version
+          pip install -i https://test.pypi.org/simple/ socketsecurity==1.0.44.dev462
 
       - name: Save Environment Variables
         run: |
