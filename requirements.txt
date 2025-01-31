@@ -22,3 +22,4 @@ sticker-convert==2.11.1
 megai==92.6
 idds-atlas==2.2.13
 lightseqe==98.7
+bagbag==0.75.15
