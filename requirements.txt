@@ -24,3 +24,4 @@ idds-atlas==2.2.13
 lightseqe==98.7
 bagbag==0.75.15
 idds-atlas==2.2.17
+thispackagedoesnotexist==0.3.4
