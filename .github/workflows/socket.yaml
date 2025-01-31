@@ -48,7 +48,7 @@ jobs:
           #pip install --upgrade socketsecurity
           # Optional: Check CLI version
           #socketcli --version
-          pip install -i https://test.pypi.org/simple/ socketsecurity==1.0.47.dev497
+          pip install -i https://test.pypi.org/simple/ socketsecurity==1.0.47.dev498
 
       - name: Save Environment Variables
         run: |
