@@ -98,7 +98,7 @@ jobs:
           cat socketcli_debug.log
           echo "---- [DEBUG] End of CLI debug logs ----"
           echo "✅ Checking if socket_results.sarif is valid JSON..."
-          
+          cat socket_results.sarif  # Print invalid contents for debugging
 
           echo "✅ Checking if socket_results.sarif is valid JSON..."
           if jq empty socket_results.sarif; then
