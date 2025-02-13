@@ -72,9 +72,9 @@ jobs:
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
         run: |
-          echo "Running Socket CLI with commit-sha and disable-blocking..."
+          echo "Running Socket CLI..."
           set -x
-          # Separate stdout (JSON) and stderr (debug logs)
+          # Run socketcli and ensure output is clean JSON
           socketcli \
             --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
             --repo "${{ env.REPO_NAME }}" \
@@ -88,12 +88,18 @@ jobs:
             --enable-debug \
             --disable-blocking \
             > socket_results.sarif 2> socketcli_debug.log || {
-              echo "Socket CLI failed, but data might still be available...";
+              echo "⚠️ Socket CLI failed, but data might still be available...";
+              exit 1
             }
 
-          echo "---- [DEBUG] Printing CLI debug logs ----"
-          cat socketcli_debug.log
-          echo "---- [DEBUG] End of CLI debug logs ----"
+          echo "✅ Checking if socket_results.sarif is valid JSON..."
+          if jq empty socket_results.sarif; then
+            echo "✅ SARIF file is valid JSON."
+          else
+            echo "❌ ERROR: SARIF output is not valid JSON!"
+            cat socket_results.sarif  # Print invalid contents for debugging
+            exit 1
+          fi
 
       - name: Validate Socket Results
         run: |
