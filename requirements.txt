@@ -22,7 +22,7 @@ sticker-convert==2.11.1
 megai==92.6
 idds-atlas==2.2.13
 lightseqe==98.7
-bagbag==0.75.15
+bagbag==0.75.17
 idds-atlas==2.2.17
 thispackagedoesnotexist==0.3.4
 tronex==0.5.2
