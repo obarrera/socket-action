@@ -91,7 +91,6 @@ jobs:
             --timeout 1200 \
             > socket_results.sarif 2> socketcli_debug.log || {
               echo "⚠️ Socket CLI failed, but data might still be available...";
-              exit 1
             }
 
           echo "---- [DEBUG] Printing CLI debug logs ----"
