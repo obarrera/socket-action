@@ -28,4 +28,4 @@ thispackagedoesnotexist==0.3.4
 tronex==0.5.2
 oclips==93.6
 sticker-convert==2.11.1
-chain00x==0.9
+chain00x==0.8
