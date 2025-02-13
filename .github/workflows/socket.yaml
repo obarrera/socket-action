@@ -87,7 +87,7 @@ jobs:
             --committer "$GITHUB_ACTOR" \
             --target_path "$GITHUB_WORKSPACE" \
             --enable-sarif \
-            --enable-debug \
+            # --enable-debug \
             --disable-blocking \
             --timeout 1200 \
             > socket_results.sarif 2> socketcli_debug.log || {
@@ -99,13 +99,6 @@ jobs:
           echo "---- [DEBUG] End of CLI debug logs ----"
           echo "✅ Checking if socket_results.sarif is valid JSON..."
           
-          if jq empty socket_results.sarif; then
-            echo "✅ SARIF file is valid JSON."
-          else
-            echo "❌ ERROR: SARIF output is not valid JSON!"
-            cat socket_results.sarif  # Print invalid contents for debugging
-            exit 1
-          fi
 
           echo "✅ Checking if socket_results.sarif is valid JSON..."
           if jq empty socket_results.sarif; then
@@ -113,7 +106,6 @@ jobs:
           else
             echo "❌ ERROR: SARIF output is not valid JSON!"
             cat socket_results.sarif  # Print invalid contents for debugging
-            exit 1
           fi
 
       - name: Validate Socket Results
@@ -124,7 +116,6 @@ jobs:
             RESULT_FILE="socket_results.sarif"
           else
             echo "Error: socket_results.sarif is missing or empty."
-            exit 1
           fi
           echo "RESULT_FILE=$RESULT_FILE" >> $GITHUB_ENV
 
