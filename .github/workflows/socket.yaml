@@ -52,7 +52,7 @@ jobs:
           echo "Installing Socket SDK..."
           #pip install --upgrade "socket-sdk-python>=2.0.4"
           pip install --upgrade 'requests>=2.31.0'
-          pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ socket-sdk-python==2.0.5.dev1
+          pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ socket-sdk-python==2.0.5.dev2
 
       - name: Save Environment Variables
         run: |
