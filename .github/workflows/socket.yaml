@@ -87,7 +87,7 @@ jobs:
             --committer "$GITHUB_ACTOR" \
             --target_path "$GITHUB_WORKSPACE" \
             --enable-sarif \
-            # --enable-debug \
+            --enable-debug \
             --disable-blocking \
             --timeout 1200 \
             > socket_results.sarif 2> socketcli_debug.log || {
