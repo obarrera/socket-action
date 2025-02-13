@@ -92,6 +92,19 @@ jobs:
               exit 1
             }
 
+          echo "---- [DEBUG] Printing CLI debug logs ----"
+          cat socketcli_debug.log
+          echo "---- [DEBUG] End of CLI debug logs ----"
+          echo "✅ Checking if socket_results.sarif is valid JSON..."
+          
+          if jq empty socket_results.sarif; then
+            echo "✅ SARIF file is valid JSON."
+          else
+            echo "❌ ERROR: SARIF output is not valid JSON!"
+            cat socket_results.sarif  # Print invalid contents for debugging
+            exit 1
+          fi
+
           echo "✅ Checking if socket_results.sarif is valid JSON..."
           if jq empty socket_results.sarif; then
             echo "✅ SARIF file is valid JSON."
