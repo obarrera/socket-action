@@ -42,10 +42,10 @@ jobs:
           echo "Installing compatible GitPython and gitdb versions..."
           pip install GitPython==3.1.31 gitdb==4.0.10
 
-      - name: Install Socket SDK
-        run: |
-          echo "Installing Socket SDK..."
-          pip install --upgrade "socket-sdk-python>=2.0.4"
+      #- name: Install Socket SDK
+        #run: |
+          #echo "Installing Socket SDK..."
+          #pip install --upgrade "socket-sdk-python>=2.0.4"
 
       - name: Install Socket Security CLI
         run: |
