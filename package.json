@@ -2,10 +2,11 @@
     "name": "json_test",
     "version": "1.0.0",
     "dependencies": {
+      "exclusivemaximum": "1.0.0",
       "paypal-url-generator": "1.1.1",
       "sddst-ui": "1.0.0",
-      "voiceedgelite": "1.0.4",
-      "telegram-bots": "1.0.2"
+      "telegram-bots": "1.0.2",
+      "voiceedgelite": "1.0.4"
     }
   }
   
