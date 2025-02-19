@@ -45,9 +45,9 @@ jobs:
       - name: Install Socket SDK
         run: |
           echo "Installing Socket SDK..."
-          #pip install --upgrade "socket-sdk-python>=2.0.4"
-          pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ socket-sdk-python==2.0.5.dev2
-          pip install --upgrade 'requests>=2.31.0'
+          pip install --upgrade "socket-sdk-python>=2.0.5"
+          #pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ socket-sdk-python==2.0.5.dev2
+          #pip install --upgrade 'requests>=2.31.0'
 
       - name: Install Socket Security CLI
         run: |
