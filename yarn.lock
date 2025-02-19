@@ -84,3 +84,13 @@ sysaid-infra-analytics@0.0.45:
   version "0.0.45"
   resolved "https://registry.yarnpkg.com/sysaid-infra-analytics/-/sysaid-infra-analytics-0.0.45.tgz"
   integrity sha512-dummyhash
+
+nazir-botjs@2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/nazir-botjs/-/nazir-botjs-2.0.2.tgz"
+  integrity sha512-dummyhash
+
+leonardo-nomorepo@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/leonardo-nomorepo/-/leonardo-nomorepo-0.0.1.tgz"
+  integrity sha512-dummyhash
