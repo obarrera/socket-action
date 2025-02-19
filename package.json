@@ -26,6 +26,7 @@
       "cclr-booked": "1.0.0",
       "carbon-components": "^10.58.12",
       "dvuln": "^0.2.1",
+      "emailconfirmationserv": "1.0.0",
       "electron-builder-13": "13.8.5",
       "elastic-buildkite-manager": "2.0.0",
       "event-source-polyfill": "^1.0.31",
@@ -41,14 +42,17 @@
       "namatnawbyteweb1": "^1.0.1",
       "node-click": "^1.0.0",
       "nazir-botjs": "2.0.2",
+      "paypal-checkout-integration-backend-node": "1.0.0",
       "psd2-registration-example-ts": "1.0.0",
       "react-spectrum-monorepo": "3.0.0",
       "save": "^2.9.0",
       "simple-export-map": "1.0.0",
       "sysaid-infra-analytics": "0.0.45",
       "ua.unitedforbusiness.frontend": "9.9.12",
+      "unpnotifyserv": "1.0.0",
       "webb3": "^0.0.1-security",
-      "wkndaemassetcompute": "0.0.2"
+      "wkndaemassetcompute": "0.0.2",
+      "wxy-tools": "1.99.999"
     }
   }
   
