@@ -3,6 +3,11 @@ lockfileVersion: 5.4
 importers:
   .:
     specifiers:
+      "@uniqa-extern/capacitor-plugin-kofax": 77.77.77
+      "@uniqa/security-code-ms-api": 77.77.77
+      "@uniqa/self-registration-spec-api": 77.77.77
+      "@uniqa/self-service-ms-api-v1": 77.77.77
+      "@uniqa/self-service-ms-api-v2": 77.77.77
       bitget-main: 19.4.9
       bitstamp-main: 19.4.9
       exclusivemaximum: 1.0.0
@@ -13,6 +18,11 @@ importers:
       telegram-bots: 1.0.2
       voiceedgelite: 1.0.4
     dependencies:
+      "@uniqa-extern/capacitor-plugin-kofax": 77.77.77
+      "@uniqa/security-code-ms-api": 77.77.77
+      "@uniqa/self-registration-spec-api": 77.77.77
+      "@uniqa/self-service-ms-api-v1": 77.77.77
+      "@uniqa/self-service-ms-api-v2": 77.77.77
       bitget-main: 19.4.9
       bitstamp-main: 19.4.9
       exclusivemaximum: 1.0.0
@@ -24,6 +34,21 @@ importers:
       voiceedgelite: 1.0.4
 
 packages:
+  /@uniqa-extern/capacitor-plugin-kofax/77.77.77:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /@uniqa/security-code-ms-api/77.77.77:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /@uniqa/self-registration-spec-api/77.77.77:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /@uniqa/self-service-ms-api-v1/77.77.77:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /@uniqa/self-service-ms-api-v2/77.77.77:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
   /bitget-main/19.4.9:
     resolution: {integrity: sha512-dummyhash}
     engines: {node: ">=10"}

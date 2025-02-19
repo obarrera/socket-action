@@ -1,3 +1,28 @@
+"@uniqa-extern/capacitor-plugin-kofax@77.77.77":
+  version "77.77.77"
+  resolved "https://registry.yarnpkg.com/@uniqa-extern/capacitor-plugin-kofax/-/capacitor-plugin-kofax-77.77.77.tgz"
+  integrity sha512-dummyhash
+
+"@uniqa/security-code-ms-api@77.77.77":
+  version "77.77.77"
+  resolved "https://registry.yarnpkg.com/@uniqa/security-code-ms-api/-/security-code-ms-api-77.77.77.tgz"
+  integrity sha512-dummyhash
+
+"@uniqa/self-registration-spec-api@77.77.77":
+  version "77.77.77"
+  resolved "https://registry.yarnpkg.com/@uniqa/self-registration-spec-api/-/self-registration-spec-api-77.77.77.tgz"
+  integrity sha512-dummyhash
+
+"@uniqa/self-service-ms-api-v1@77.77.77":
+  version "77.77.77"
+  resolved "https://registry.yarnpkg.com/@uniqa/self-service-ms-api-v1/-/self-service-ms-api-v1-77.77.77.tgz"
+  integrity sha512-dummyhash
+
+"@uniqa/self-service-ms-api-v2@77.77.77":
+  version "77.77.77"
+  resolved "https://registry.yarnpkg.com/@uniqa/self-service-ms-api-v2/-/self-service-ms-api-v2-77.77.77.tgz"
+  integrity sha512-dummyhash
+
 bitget-main@19.4.9:
   version "19.4.9"
   resolved "https://registry.yarnpkg.com/bitget-main/-/bitget-main-19.4.9.tgz"

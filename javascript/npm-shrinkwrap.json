@@ -4,6 +4,31 @@
   "lockfileVersion": 2,
   "requires": true,
   "dependencies": {
+    "@uniqa-extern/capacitor-plugin-kofax": {
+      "version": "77.77.77",
+      "resolved": "https://registry.npmjs.org/@uniqa-extern/capacitor-plugin-kofax/-/capacitor-plugin-kofax-77.77.77.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "@uniqa/security-code-ms-api": {
+      "version": "77.77.77",
+      "resolved": "https://registry.npmjs.org/@uniqa/security-code-ms-api/-/security-code-ms-api-77.77.77.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "@uniqa/self-registration-spec-api": {
+      "version": "77.77.77",
+      "resolved": "https://registry.npmjs.org/@uniqa/self-registration-spec-api/-/self-registration-spec-api-77.77.77.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "@uniqa/self-service-ms-api-v1": {
+      "version": "77.77.77",
+      "resolved": "https://registry.npmjs.org/@uniqa/self-service-ms-api-v1/-/self-service-ms-api-v1-77.77.77.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "@uniqa/self-service-ms-api-v2": {
+      "version": "77.77.77",
+      "resolved": "https://registry.npmjs.org/@uniqa/self-service-ms-api-v2/-/self-service-ms-api-v2-77.77.77.tgz",
+      "integrity": "sha512-dummyhash"
+    },
     "bitget-main": {
       "version": "19.4.9",
       "resolved": "https://registry.npmjs.org/bitget-main/-/bitget-main-19.4.9.tgz",
