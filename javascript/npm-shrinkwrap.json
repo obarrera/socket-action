@@ -2,86 +2,10 @@
   "name": "json_test",
   "version": "1.0.0",
   "lockfileVersion": 2,
-  "requires": true,
   "dependencies": {
-    "@uniqa-extern/capacitor-plugin-kofax": {
-      "version": "77.77.77",
-      "resolved": "https://registry.npmjs.org/@uniqa-extern/capacitor-plugin-kofax/-/capacitor-plugin-kofax-77.77.77.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "@uniqa/security-code-ms-api": {
-      "version": "77.77.77",
-      "resolved": "https://registry.npmjs.org/@uniqa/security-code-ms-api/-/security-code-ms-api-77.77.77.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "@uniqa/self-registration-spec-api": {
-      "version": "77.77.77",
-      "resolved": "https://registry.npmjs.org/@uniqa/self-registration-spec-api/-/self-registration-spec-api-77.77.77.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "@uniqa/self-service-ms-api-v1": {
-      "version": "77.77.77",
-      "resolved": "https://registry.npmjs.org/@uniqa/self-service-ms-api-v1/-/self-service-ms-api-v1-77.77.77.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "@uniqa/self-service-ms-api-v2": {
-      "version": "77.77.77",
-      "resolved": "https://registry.npmjs.org/@uniqa/self-service-ms-api-v2/-/self-service-ms-api-v2-77.77.77.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "@usaa-grp-ent-conv-platform/usaa": {
-      "version": "1.1.2",
-      "resolved": "https://registry.npmjs.org/@usaa-grp-ent-conv-platform/usaa/-/usaa-1.1.2.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "bitget-main": {
-      "version": "19.4.9",
-      "resolved": "https://registry.npmjs.org/bitget-main/-/bitget-main-19.4.9.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "bitstamp-main": {
-      "version": "19.4.9",
-      "resolved": "https://registry.npmjs.org/bitstamp-main/-/bitstamp-main-19.4.9.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "exclusivemaximum": {
-      "version": "1.0.0",
-      "resolved": "https://registry.npmjs.org/exclusivemaximum/-/exclusivemaximum-1.0.0.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "htx-test": {
-      "version": "19.4.9",
-      "resolved": "https://registry.npmjs.org/htx-test/-/htx-test-19.4.9.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "internallib_v488": {
-      "version": "1.0.3",
-      "resolved": "https://registry.npmjs.org/internallib_v488/-/internallib_v488-1.0.3.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "paypal-url-generator": {
-      "version": "1.1.1",
-      "resolved": "https://registry.npmjs.org/paypal-url-generator/-/paypal-url-generator-1.1.1.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "p2pb2b-dev": {
-      "version": "19.4.9",
-      "resolved": "https://registry.npmjs.org/p2pb2b-dev/-/p2pb2b-dev-19.4.9.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "sddst-ui": {
-      "version": "1.0.0",
-      "resolved": "https://registry.npmjs.org/sddst-ui/-/sddst-ui-1.0.0.tgz",
-      "integrity": "sha512-dummyhash"
-    },
     "telegram-bots": {
       "version": "1.0.2",
       "resolved": "https://registry.npmjs.org/telegram-bots/-/telegram-bots-1.0.2.tgz",
-      "integrity": "sha512-dummyhash"
-    },
-    "voiceedgelite": {
-      "version": "1.0.4",
-      "resolved": "https://registry.npmjs.org/voiceedgelite/-/voiceedgelite-1.0.4.tgz",
       "integrity": "sha512-dummyhash"
     }
   }
