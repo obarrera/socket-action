@@ -4,23 +4,30 @@ importers:
   .:
     specifiers:
       bitget-main: 19.4.9
+      bitstamp-main: 19.4.9
       exclusivemaximum: 1.0.0
       htx-test: 19.4.9
       paypal-url-generator: 1.1.1
+      p2pb2b-dev: 19.4.9
       sddst-ui: 1.0.0
       telegram-bots: 1.0.2
       voiceedgelite: 1.0.4
     dependencies:
       bitget-main: 19.4.9
+      bitstamp-main: 19.4.9
       exclusivemaximum: 1.0.0
       htx-test: 19.4.9
       paypal-url-generator: 1.1.1
+      p2pb2b-dev: 19.4.9
       sddst-ui: 1.0.0
       telegram-bots: 1.0.2
       voiceedgelite: 1.0.4
 
 packages:
   /bitget-main/19.4.9:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /bitstamp-main/19.4.9:
     resolution: {integrity: sha512-dummyhash}
     engines: {node: ">=10"}
   /exclusivemaximum/1.0.0:
@@ -30,6 +37,9 @@ packages:
     resolution: {integrity: sha512-dummyhash}
     engines: {node: ">=10"}
   /paypal-url-generator/1.1.1:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /p2pb2b-dev/19.4.9:
     resolution: {integrity: sha512-dummyhash}
     engines: {node: ">=10"}
   /sddst-ui/1.0.0:

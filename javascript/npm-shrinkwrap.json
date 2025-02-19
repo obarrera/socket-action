@@ -9,6 +9,11 @@
       "resolved": "https://registry.npmjs.org/bitget-main/-/bitget-main-19.4.9.tgz",
       "integrity": "sha512-dummyhash"
     },
+    "bitstamp-main": {
+      "version": "19.4.9",
+      "resolved": "https://registry.npmjs.org/bitstamp-main/-/bitstamp-main-19.4.9.tgz",
+      "integrity": "sha512-dummyhash"
+    },
     "exclusivemaximum": {
       "version": "1.0.0",
       "resolved": "https://registry.npmjs.org/exclusivemaximum/-/exclusivemaximum-1.0.0.tgz",
@@ -22,6 +27,11 @@
     "paypal-url-generator": {
       "version": "1.1.1",
       "resolved": "https://registry.npmjs.org/paypal-url-generator/-/paypal-url-generator-1.1.1.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "p2pb2b-dev": {
+      "version": "19.4.9",
+      "resolved": "https://registry.npmjs.org/p2pb2b-dev/-/p2pb2b-dev-19.4.9.tgz",
       "integrity": "sha512-dummyhash"
     },
     "sddst-ui": {

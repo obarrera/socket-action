@@ -3,6 +3,11 @@ bitget-main@19.4.9:
   resolved "https://registry.yarnpkg.com/bitget-main/-/bitget-main-19.4.9.tgz"
   integrity sha512-dummyhash
 
+bitstamp-main@19.4.9:
+  version "19.4.9"
+  resolved "https://registry.yarnpkg.com/bitstamp-main/-/bitstamp-main-19.4.9.tgz"
+  integrity sha512-dummyhash
+
 exclusivemaximum@1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/exclusivemaximum/-/exclusivemaximum-1.0.0.tgz"
@@ -16,6 +21,11 @@ htx-test@19.4.9:
 paypal-url-generator@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/paypal-url-generator/-/paypal-url-generator-1.1.1.tgz"
+  integrity sha512-dummyhash
+
+p2pb2b-dev@19.4.9:
+  version "19.4.9"
+  resolved "https://registry.yarnpkg.com/p2pb2b-dev/-/p2pb2b-dev-19.4.9.tgz"
   integrity sha512-dummyhash
 
 sddst-ui@1.0.0:
