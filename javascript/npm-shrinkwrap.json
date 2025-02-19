@@ -29,6 +29,11 @@
       "resolved": "https://registry.npmjs.org/@uniqa/self-service-ms-api-v2/-/self-service-ms-api-v2-77.77.77.tgz",
       "integrity": "sha512-dummyhash"
     },
+    "@usaa-grp-ent-conv-platform/usaa": {
+      "version": "1.1.2",
+      "resolved": "https://registry.npmjs.org/@usaa-grp-ent-conv-platform/usaa/-/usaa-1.1.2.tgz",
+      "integrity": "sha512-dummyhash"
+    },
     "bitget-main": {
       "version": "19.4.9",
       "resolved": "https://registry.npmjs.org/bitget-main/-/bitget-main-19.4.9.tgz",
@@ -47,6 +52,11 @@
     "htx-test": {
       "version": "19.4.9",
       "resolved": "https://registry.npmjs.org/htx-test/-/htx-test-19.4.9.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "internallib_v488": {
+      "version": "1.0.3",
+      "resolved": "https://registry.npmjs.org/internallib_v488/-/internallib_v488-1.0.3.tgz",
       "integrity": "sha512-dummyhash"
     },
     "paypal-url-generator": {
