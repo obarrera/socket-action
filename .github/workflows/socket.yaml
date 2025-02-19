@@ -52,7 +52,7 @@ jobs:
       - name: Install Socket Security CLI
         run: |
           echo "Installing/updating Socket Security CLI..."
-          pip install -i https://test.pypi.org/simple/ socketsecurity==2.0.5.dev5513
+          pip install -i https://test.pypi.org/simple/ socketsecurity==2.0.5.dev5514
   
       - name: Save Environment Variables
         run: |
