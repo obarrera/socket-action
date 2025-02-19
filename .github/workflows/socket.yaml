@@ -40,7 +40,7 @@ jobs:
       - name: Install compatible GitPython and gitdb
         run: |
           echo "Installing compatible GitPython and gitdb versions..."
-          pip install GitPython==3.1.31 gitdb==4.0.10#
+          pip install GitPython==3.1.31 gitdb==4.0.10
 
       - name: Install Socket Security CLI
         run: |
