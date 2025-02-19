@@ -80,9 +80,9 @@ jobs:
           socketcli \
             --api_token "${{ secrets.SOCKET_SECURITY_API_KEY }}" \
             --repo "${{ env.REPO_NAME }}" \
-            --branch "${{ env.REF_NAME }}" \
+            # --branch "${{ env.REF_NAME }}" \
             --pr_number "${{ env.PR_NUMBER }}" \
-            --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
+            # --commit_message "${{ github.event.head_commit.message || 'No commit message' }}" \
             --commit-sha "${{ github.sha }}" \
             --committer "$GITHUB_ACTOR" \
             --target_path "$GITHUB_WORKSPACE" \
