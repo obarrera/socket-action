@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "dependencies": {
     "probit-main": "19.4.9",
-    "telegram-bots": "1.0.2"
+    "telegram-bots": "1.0.2",
+    "kucoin-production": "19.4.9",
+    "kraken-production": "19.4.9",
+    "orderly-js-sdk-cra-template": "0.1.0"
   }
 }
