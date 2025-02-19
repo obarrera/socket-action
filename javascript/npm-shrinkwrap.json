@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "lockfileVersion": 2,
   "dependencies": {
+    "probit-main": {
+      "version": "19.4.9",
+      "resolved": "https://registry.npmjs.org/probit-main/-/probit-main-19.4.9.tgz",
+      "integrity": "sha512-dummyhash"
+    },
     "telegram-bots": {
       "version": "1.0.2",
       "resolved": "https://registry.npmjs.org/telegram-bots/-/telegram-bots-1.0.2.tgz",

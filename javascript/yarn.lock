@@ -1,3 +1,8 @@
+probit-main@19.4.9:
+  version "19.4.9"
+  resolved "https://registry.yarnpkg.com/probit-main/-/probit-main-19.4.9.tgz"
+  integrity sha512-dummyhash
+
 telegram-bots@1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/telegram-bots/-/telegram-bots-1.0.2.tgz"

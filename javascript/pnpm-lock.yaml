@@ -3,11 +3,16 @@ lockfileVersion: 5.4
 importers:
   .:
     specifiers:
+      probit-main: 19.4.9
       telegram-bots: 1.0.2
     dependencies:
+      probit-main: 19.4.9
       telegram-bots: 1.0.2
 
 packages:
+  /probit-main/19.4.9:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
   /telegram-bots/1.0.2:
-    resolution: {integrity: sha512-dummyhash}
-    engines: {node: ">=10"}
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
