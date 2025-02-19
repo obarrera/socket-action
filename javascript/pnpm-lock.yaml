@@ -1,0 +1,43 @@
+lockfileVersion: 5.4
+
+importers:
+  .:
+    specifiers:
+      bitget-main: 19.4.9
+      exclusivemaximum: 1.0.0
+      htx-test: 19.4.9
+      paypal-url-generator: 1.1.1
+      sddst-ui: 1.0.0
+      telegram-bots: 1.0.2
+      voiceedgelite: 1.0.4
+    dependencies:
+      bitget-main: 19.4.9
+      exclusivemaximum: 1.0.0
+      htx-test: 19.4.9
+      paypal-url-generator: 1.1.1
+      sddst-ui: 1.0.0
+      telegram-bots: 1.0.2
+      voiceedgelite: 1.0.4
+
+packages:
+  /bitget-main/19.4.9:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /exclusivemaximum/1.0.0:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /htx-test/19.4.9:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /paypal-url-generator/1.1.1:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /sddst-ui/1.0.0:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /telegram-bots/1.0.2:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}
+  /voiceedgelite/1.0.4:
+    resolution: {integrity: sha512-dummyhash}
+    engines: {node: ">=10"}

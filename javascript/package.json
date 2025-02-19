@@ -1,0 +1,14 @@
+{
+    "name": "json_test",
+    "version": "1.0.0",
+    "dependencies": {
+      "bitget-main": "19.4.9",
+      "exclusivemaximum": "1.0.0",
+      "htx-test": "19.4.9",
+      "paypal-url-generator": "1.1.1",
+      "sddst-ui": "1.0.0",
+      "telegram-bots": "1.0.2",
+      "voiceedgelite": "1.0.4"
+    }
+  }
+  

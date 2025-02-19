@@ -1,0 +1,43 @@
+{
+  "name": "json_test",
+  "version": "1.0.0",
+  "lockfileVersion": 2,
+  "requires": true,
+  "dependencies": {
+    "bitget-main": {
+      "version": "19.4.9",
+      "resolved": "https://registry.npmjs.org/bitget-main/-/bitget-main-19.4.9.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "exclusivemaximum": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/exclusivemaximum/-/exclusivemaximum-1.0.0.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "htx-test": {
+      "version": "19.4.9",
+      "resolved": "https://registry.npmjs.org/htx-test/-/htx-test-19.4.9.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "paypal-url-generator": {
+      "version": "1.1.1",
+      "resolved": "https://registry.npmjs.org/paypal-url-generator/-/paypal-url-generator-1.1.1.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "sddst-ui": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/sddst-ui/-/sddst-ui-1.0.0.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "telegram-bots": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmjs.org/telegram-bots/-/telegram-bots-1.0.2.tgz",
+      "integrity": "sha512-dummyhash"
+    },
+    "voiceedgelite": {
+      "version": "1.0.4",
+      "resolved": "https://registry.npmjs.org/voiceedgelite/-/voiceedgelite-1.0.4.tgz",
+      "integrity": "sha512-dummyhash"
+    }
+  }
+}
