@@ -3,31 +3,116 @@ lockfileVersion: 5.4
 importers:
   .:
     specifiers:
-      probit-main: 19.4.9
-      telegram-bots: 1.0.2
-      kucoin-production: 19.4.9
+      "@uniqa-extern/capacitor-plugin-kofax": 77.77.77
+      "@uniqa/security-code-ms-api": 77.77.77
+      "@uniqa/self-registration-spec-api": 77.77.77
+      "@uniqa/self-service-ms-api-v1": 77.77.77
+      "@uniqa/self-service-ms-api-v2": 77.77.77
+      "@usaa-grp-ent-conv-platform/usaa": 1.1.2
+      bitget-main: 19.4.9
+      bitstamp-main: 19.4.9
+      byted-player: 1.3.7-beta
+      exclusivemaximum: 1.0.0
+      gutenberg-kit: 1.0.0
+      heytap: 1.0.0
+      htx-test: 19.4.9
+      internallib_v488: 1.0.3
       kraken-production: 19.4.9
+      kucoin-production: 19.4.9
       orderly-js-sdk-cra-template: 0.1.0
+      p2pb2b-dev: 19.4.9
+      paypal-url-generator: 1.1.1
+      sddst-ui: 1.0.0
+      telegram-bots: 1.0.2
+      voiceedgelite: 1.0.4
     dependencies:
-      probit-main: 19.4.9
-      telegram-bots: 1.0.2
-      kucoin-production: 19.4.9
+      "@uniqa-extern/capacitor-plugin-kofax": 77.77.77
+      "@uniqa/security-code-ms-api": 77.77.77
+      "@uniqa/self-registration-spec-api": 77.77.77
+      "@uniqa/self-service-ms-api-v1": 77.77.77
+      "@uniqa/self-service-ms-api-v2": 77.77.77
+      "@usaa-grp-ent-conv-platform/usaa": 1.1.2
+      bitget-main: 19.4.9
+      bitstamp-main: 19.4.9
+      byted-player: 1.3.7-beta
+      exclusivemaximum: 1.0.0
+      gutenberg-kit: 1.0.0
+      heytap: 1.0.0
+      htx-test: 19.4.9
+      internallib_v488: 1.0.3
       kraken-production: 19.4.9
+      kucoin-production: 19.4.9
       orderly-js-sdk-cra-template: 0.1.0
+      p2pb2b-dev: 19.4.9
+      paypal-url-generator: 1.1.1
+      sddst-ui: 1.0.0
+      telegram-bots: 1.0.2
+      voiceedgelite: 1.0.4
 
 packages:
-  /probit-main/19.4.9:
+  /@uniqa-extern/capacitor-plugin-kofax/77.77.77:
     resolution: { integrity: sha512-dummyhash }
     engines: { node: ">=10" }
-  /telegram-bots/1.0.2:
+  /@uniqa/security-code-ms-api/77.77.77:
     resolution: { integrity: sha512-dummyhash }
     engines: { node: ">=10" }
-  /kucoin-production/19.4.9:
+  /@uniqa/self-registration-spec-api/77.77.77:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /@uniqa/self-service-ms-api-v1/77.77.77:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /@uniqa/self-service-ms-api-v2/77.77.77:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /@usaa-grp-ent-conv-platform/usaa/1.1.2:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /bitget-main/19.4.9:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /bitstamp-main/19.4.9:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /byted-player/1.3.7-beta:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /exclusivemaximum/1.0.0:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /gutenberg-kit/1.0.0:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /heytap/1.0.0:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /htx-test/19.4.9:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /internallib_v488/1.0.3:
     resolution: { integrity: sha512-dummyhash }
     engines: { node: ">=10" }
   /kraken-production/19.4.9:
     resolution: { integrity: sha512-dummyhash }
     engines: { node: ">=10" }
+  /kucoin-production/19.4.9:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
   /orderly-js-sdk-cra-template/0.1.0:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /p2pb2b-dev/19.4.9:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /paypal-url-generator/1.1.1:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /sddst-ui/1.0.0:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /telegram-bots/1.0.2:
+    resolution: { integrity: sha512-dummyhash }
+    engines: { node: ">=10" }
+  /voiceedgelite/1.0.4:
     resolution: { integrity: sha512-dummyhash }
     engines: { node: ">=10" }
