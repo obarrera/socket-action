@@ -1,4 +1,3 @@
-```yaml
 name: socket-security-workflow
 run-name: Socket Security GitHub Action
 
@@ -40,10 +39,38 @@ jobs:
             --scm github \
             --enable-sarif \
             --disable-blocking \
-            > socket_results.sarif || true
+            > socket_results.sarif 2> socketcli_debug.log || true
+
+      - name: Show SARIF summary
+        run: |
+          echo "=== SARIF Summary ==="
+          if [ -s socket_results.sarif ]; then
+            echo "Tool: $(jq -r '.runs[0].tool.driver.name' socket_results.sarif)"
+            echo "Results count: $(jq '.runs[0].results | length' socket_results.sarif)"
+            echo "-- First 5 results --"
+            jq -r '.runs[0].results[:5][] |
+                   "\(.level // "warning") | \(.ruleId) | \(.locations[0].physicalLocation.artifactLocation.uri // "?"):\(.locations[0].physicalLocation.region.startLine // 0) | \(.message.text)"' \
+                   socket_results.sarif || true
+          else
+            echo "SARIF file missing or empty."
+          fi
+
+          {
+            echo "### Socket SARIF summary"
+            echo "- Tool: $(jq -r '.runs[0].tool.driver.name' socket_results.sarif 2>/dev/null || echo 'unknown')"
+            echo "- Results: $(jq '.runs[0].results|length' socket_results.sarif 2>/dev/null || echo 0)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: socket_results.sarif
-```
+
+      - name: Upload SARIF & logs (artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: socket-sarif-and-logs
+          path: |
+            socket_results.sarif
+            socketcli_debug.log
