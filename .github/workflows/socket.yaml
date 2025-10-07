@@ -29,6 +29,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade socketsecurity
 
+      # Fail fast if required secrets are missing
+      - name: Check required secrets
+        env:
+          SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
+          GH_API_TOKEN: ${{ github.token }}
+        run: |
+          ok=1
+          [ -n "${SOCKET_SECURITY_API_KEY:-}" ] || { echo "❌ Missing SOCKET_SECURITY_API_KEY"; ok=0; }
+          [ -n "${GH_API_TOKEN:-}" ] || { echo "❌ Missing GH_API_TOKEN"; ok=0; }
+          [ "$ok" -eq 1 ] || exit 1
+
       # Set PR_NUMBER only on PR events
       - name: Prep CI vars
         run: |
@@ -96,11 +107,12 @@ jobs:
             fi
           fi
 
-          # If invalid/missing, create an empty-but-valid SARIF so upload can proceed
+          # If invalid/missing, create an empty-but-valid SARIF via Python (avoid heredoc YAML issues)
           if [ "$VALID" -ne 1 ]; then
             echo "❌ socket_results.sarif is missing/invalid. Creating an empty SARIF for upload."
-            cat > socket_results.empty.sarif <<'EOF'
-{
+            python - <<'PY'
+import json
+sarif = {
   "version": "2.1.0",
   "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
   "runs": [
@@ -110,7 +122,9 @@ jobs:
     }
   ]
 }
-EOF
+with open("socket_results.empty.sarif", "w", encoding="utf-8") as f:
+    json.dump(sarif, f)
+PY
             echo "UPLOAD_FILE=socket_results.empty.sarif" >> "$GITHUB_ENV"
           else
             echo "✅ SARIF passed validation."
@@ -124,6 +138,22 @@ EOF
           git status || true
           git rev-parse --abbrev-ref HEAD || true
           git show --name-only --oneline "${GITHUB_SHA}" | cat || true
+
+      - name: Detect API key errors
+        if: always()
+        run: |
+          set -e
+          echo "### Socket CLI auth check" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f socketcli_debug.log ]; then
+            if grep -Eiq '(401|403|unauthoriz|forbidden|invalid[^a-z]?api|missing[^a-z]?api|SOCKET_SECURITY_API_KEY.*missing)' socketcli_debug.log; then
+              echo "::error::Likely Socket API key issue (see socketcli_debug.log)."
+              echo "- ❌ Likely API key error detected (see job logs/artifact)." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "- ✅ No obvious API key errors in debug log." >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "- ⚠️ No debug log found." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload SARIF to code scanning
         uses: github/codeql-action/upload-sarif@v3
