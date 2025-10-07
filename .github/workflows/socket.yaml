@@ -52,8 +52,7 @@ jobs:
       - name: Run Socket scan (SARIF)
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
-          # Give the CLI a token for GitHub metadata/diffs
-          GH_API_TOKEN: ${{ github.token }}
+          GH_API_TOKEN: ${{ github.token }}   # lets the CLI talk to GitHub
         shell: bash
         run: |
           set -euxo pipefail
@@ -92,44 +91,16 @@ jobs:
           echo
           echo "---- [DEBUG] end ----"
 
-          # Strong SARIF validation (structure, not just "valid JSON")
-          VALID=0
-          if [ -s socket_results.sarif ]; then
-            if command -v jq >/dev/null 2>&1; then
-              jq -e '
-                type=="object"
-                and ( .version? // "" ) != ""
-                and ( .runs? | type=="array" and length >= 1 )
-              ' socket_results.sarif >/dev/null && VALID=1 || VALID=0
-            else
-              # Fallback check without jq
-              (grep -q '"version"' socket_results.sarif && grep -q '"runs"' socket_results.sarif) && VALID=1 || VALID=0
+          # Validate SARIF; if invalid, skip upload (no fallback file creation)
+          SHOULD_UPLOAD=0
+          if [ -s socket_results.sarif ] && command -v jq >/dev/null 2>&1; then
+            if jq -e 'type=="object" and (.version?//"")!="" and (.runs?|type=="array" and length>=1)' socket_results.sarif >/dev/null; then
+              SHOULD_UPLOAD=1
             fi
           fi
 
-          # If invalid/missing, create an empty-but-valid SARIF via Python (avoid heredoc YAML issues)
-          if [ "$VALID" -ne 1 ]; then
-            echo "❌ socket_results.sarif is missing/invalid. Creating an empty SARIF for upload."
-            python - <<'PY'
-import json
-sarif = {
-  "version": "2.1.0",
-  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
-  "runs": [
-    {
-      "tool": { "driver": { "name": "Socket Security CLI", "informationUri": "https://socket.dev" } },
-      "results": []
-    }
-  ]
-}
-with open("socket_results.empty.sarif", "w", encoding="utf-8") as f:
-    json.dump(sarif, f)
-PY
-            echo "UPLOAD_FILE=socket_results.empty.sarif" >> "$GITHUB_ENV"
-          else
-            echo "✅ SARIF passed validation."
-            echo "UPLOAD_FILE=socket_results.sarif" >> "$GITHUB_ENV"
-          fi
+          echo "SHOULD_UPLOAD=$SHOULD_UPLOAD" >> "$GITHUB_ENV"
+          echo "UPLOAD_FILE=socket_results.sarif" >> "$GITHUB_ENV"
 
       # Optional: extra repo/commit visibility when debugging
       - name: Extra git debug
@@ -153,9 +124,9 @@ PY
             fi
           else
             echo "- ⚠️ No debug log found." >> "$GITHUB_STEP_SUMMARY"
-          fi
 
       - name: Upload SARIF to code scanning
+        if: env.SHOULD_UPLOAD == '1'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{ env.UPLOAD_FILE }}
@@ -170,4 +141,3 @@ PY
             socketcli_debug.log
             socket_results.raw.sarif
             socket_results.sarif
-            socket_results.empty.sarif
