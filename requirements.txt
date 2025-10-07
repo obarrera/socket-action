@@ -1,1 +1,3 @@
 sticker-convert==2.11.1
+smartchart==7.3.3
+vvv-tools==0.2.3
