@@ -16,136 +16,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install Socket Security CLI
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade socketsecurity
 
-      # Fail fast if required secrets are missing
-      - name: Check required secrets
+      - name: Run Socket scan (generate SARIF)
         env:
           SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
           GH_API_TOKEN: ${{ github.token }}
         run: |
-          ok=1
-          [ -n "${SOCKET_SECURITY_API_KEY:-}" ] || { echo "❌ Missing SOCKET_SECURITY_API_KEY"; ok=0; }
-          [ -n "${GH_API_TOKEN:-}" ] || { echo "❌ Missing GH_API_TOKEN"; ok=0; }
-          [ "$ok" -eq 1 ] || exit 1
+          socketcli \
+            --target-path "$GITHUB_WORKSPACE" \
+            --scm github \
+            --enable-sarif \
+            --disable-blocking \
+            > socket_results.sarif || true
 
-      # Set PR_NUMBER only on PR events
-      - name: Prep CI vars
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> "$GITHUB_ENV"
-          else
-            echo "PR_NUMBER=" >> "$GITHUB_ENV"
-          fi
-
-      - name: Run Socket scan (SARIF)
-        env:
-          SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
-          GH_API_TOKEN: ${{ github.token }}   # lets the CLI talk to GitHub
-        shell: bash
-        run: |
-          set -euxo pipefail
-
-          CLI_ARGS=(
-            --target-path "$GITHUB_WORKSPACE"
-            --scm github
-            --enable-sarif
-            --enable-debug
-            --disable-blocking
-            --timeout 1200
-          )
-
-          # Only pass --pr-number when running on a PR
-          if [ -n "${PR_NUMBER:-}" ]; then
-            CLI_ARGS+=( --pr-number "${PR_NUMBER}" )
-          fi
-
-          # Run CLI; capture SARIF and stderr separately
-          socketcli "${CLI_ARGS[@]}" > socket_results.sarif 2> socketcli_debug.log || {
-            echo "⚠️ socketcli exited non-zero (non-blocking enabled). Continuing…"
-          }
-
-          echo "---- [DEBUG] socketcli stderr (tail) ----"
-          tail -n 200 socketcli_debug.log || true
-          echo "---- [DEBUG] end ----"
-
-          # Keep a copy of whatever the CLI produced for inspection
-          cp socket_results.sarif socket_results.raw.sarif || true
-
-          echo "---- [DEBUG] SARIF file stats ----"
-          ls -l socket_results.sarif || true
-          echo -n "Bytes: " && (wc -c < socket_results.sarif || echo 0)
-          echo "---- [DEBUG] SARIF (first 2KB) ----"
-          head -c 2048 socket_results.sarif || true
-          echo
-          echo "---- [DEBUG] end ----"
-
-          # Validate SARIF; if invalid, skip upload (no fallback creation)
-          SHOULD_UPLOAD=0
-          if [ -s socket_results.sarif ]; then
-            if command -v jq >/dev/null 2>&1; then
-              # Keep it simple to avoid jq parse quirks
-              if jq -e 'type=="object" and (.runs | type=="array" and length>=1)' socket_results.sarif >/dev/null; then
-                SHOULD_UPLOAD=1
-              fi
-            else
-              # Fallback without jq
-              if grep -q '"runs"' socket_results.sarif; then
-                SHOULD_UPLOAD=1
-              fi
-            fi
-          fi
-
-          echo "SHOULD_UPLOAD=$SHOULD_UPLOAD" >> "$GITHUB_ENV"
-          echo "UPLOAD_FILE=socket_results.sarif" >> "$GITHUB_ENV"
-
-      # Optional: extra repo/commit visibility when debugging
-      - name: Extra git debug
-        if: always()
-        run: |
-          git status || true
-          git rev-parse --abbrev-ref HEAD || true
-          git show --name-only --oneline "${GITHUB_SHA}" | cat || true
-
-      - name: Detect API key errors
-        if: always()
-        shell: bash
-        run: |
-          echo "### Socket CLI auth check" >> "$GITHUB_STEP_SUMMARY"
-          if [[ -f socketcli_debug.log ]]; then
-            if grep -Eiq "(401|403|unauthoriz|forbidden|invalid[^a-z]?api|missing[^a-z]?api|SOCKET_SECURITY_API_KEY.*missing)" socketcli_debug.log; then
-              echo "::warning::Possible Socket API key issue (see socketcli_debug.log)."
-              echo "- ⚠️ Possible API key issue detected (see job logs/artifact)." >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "- ✅ No obvious API key errors in debug log." >> "$GITHUB_STEP_SUMMARY"
-            fi
-          else
-            echo "- ⚠️ No debug log found." >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload SARIF to code scanning
-        if: ${{ env.SHOULD_UPLOAD == '1' }}
+      - name: Upload SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: ${{ env.UPLOAD_FILE }}
-
-      - name: Upload debug artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: socketcli-debug
-          if-no-files-found: ignore
-          path: |
-            socketcli_debug.log
-            socket_results.raw.sarif
-            socket_results.sarif
+          sarif_file: socket_results.sarif
